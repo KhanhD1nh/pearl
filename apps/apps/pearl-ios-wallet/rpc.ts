@@ -9,8 +9,15 @@ export async function rpc<T>(c: Conn, method: string, params: unknown[] = []): P
   });
   if (res.status === 401) throw new Error('RPC auth failed');
   const body = await res.json();
-  if (body.error) throw new Error(body.error.message ?? JSON.stringify(body.error));
+  if (body.error) throw new RpcError(body.error.code, body.error.message ?? JSON.stringify(body.error));
   return body.result as T;
+}
+
+// Keeps the JSON-RPC error code (e.g. -9 = no peers, nothing signed) like desktop rpc-client.ts.
+export class RpcError extends Error {
+  constructor(readonly code: number | undefined, message: string) {
+    super(message);
+  }
 }
 
 export type Tx = { txid: string; category: string; amount: number; fee?: number; confirmations: number; time: number; address?: string };

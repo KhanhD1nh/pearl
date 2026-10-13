@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, C, fmt, haptic, Icon, Input, Section } from '@/components/ui';
 import { useWallet } from '@/lib/wallet';
-import { wallet } from '@/rpc';
+import { wallet, RpcError } from '@/rpc';
 
 type FeeLevel = 'fast' | 'medium' | 'slow';
 // Same as desktop SendTransaction.tsx / blockbook-client.ts.
@@ -43,15 +43,16 @@ export default function Send() {
         haptic.success();
         load();
         router.back();
-        Alert.alert('Đã gửi', 'Giao dịch đã được phát lên mạng.\n\n' + txid);
+        Alert.alert('Đã tạo giao dịch', 'Giao dịch đang chờ xác nhận.\n\n' + txid);
       } finally {
         await wallet.lock(c).catch(() => {});
       }
     } catch (e) {
       haptic.error();
       const m = String((e as Error).message);
-      Alert.alert('Gửi thất bại', m.includes('not relayed')
-        ? 'Không peer nào nhận giao dịch. Chưa gửi gì, tiền vẫn còn. Kiểm tra kết nối rồi thử lại.'
+      // -9: oyster preflight failed before signing (pearl-wallet v3 sendTxError); message text is not stable.
+      Alert.alert('Gửi thất bại', (e as RpcError).code === -9
+        ? 'Không có peer nào kết nối. Chưa ký, chưa gửi gì, tiền vẫn còn. Kiểm tra kết nối rồi thử lại.'
         : m.includes('mempool min fee not met') ? 'Phí quá thấp. Thử giao dịch nhỏ hơn.'
         : m.includes('passphrase') ? 'Sai passphrase.' : m);
     } finally {
