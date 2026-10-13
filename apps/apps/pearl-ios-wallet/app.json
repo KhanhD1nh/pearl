@@ -28,7 +28,12 @@
       }
     },
     "plugins": [
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Dùng Face ID để xác nhận gửi PRL."
+        }
+      ],
       "expo-router"
     ],
     "web": {

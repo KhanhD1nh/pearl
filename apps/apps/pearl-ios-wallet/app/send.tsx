@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, C, fmt, haptic, Icon, Input, Section } from '@/components/ui';
+import * as Passphrase from '@/lib/passphrase';
 import { useWallet } from '@/lib/wallet';
 import { wallet, RpcError } from '@/rpc';
 
@@ -20,7 +21,9 @@ export default function Send() {
   const [level, setLevel] = useState<FeeLevel>('fast');
   const [fees, setFees] = useState<Record<FeeLevel, number>>({ fast: 0.0001, medium: 0.00005, slow: 0.00001 });
   const [pass, setPass] = useState('');
+  const [saved, setSaved] = useState<boolean>();
   const [busy, setBusy] = useState(false);
+  useEffect(() => { Passphrase.hasSaved().then(setSaved); }, []);
   const fee = fees[level];
   const spendable = Math.max(0, (balance ?? 0) - fee);
   const amt = Number(amount.replace(',', '.'));
@@ -37,9 +40,21 @@ export default function Send() {
     setBusy(true);
     try {
       if (!(await wallet.validate(c, to.trim()))) throw new Error('Địa chỉ không hợp lệ');
-      await wallet.unlock(c, pass);
+      const p = saved ? await Passphrase.read() : pass;
+      if (p == null) {
+        // Face ID cancelled, or Keychain item invalidated by a biometric change: ask to type it.
+        setSaved(false);
+        return;
+      }
+      try {
+        await wallet.unlock(c, p);
+      } catch (e) {
+        if (saved) { await Passphrase.forget(); setSaved(false); } // changed elsewhere: stop reusing it
+        throw e;
+      }
       try {
         const txid = await wallet.send(c, to.trim(), amt, fee);
+        if (!saved) await Passphrase.save(p).catch(() => {});
         haptic.success();
         load();
         router.back();
@@ -126,11 +141,14 @@ export default function Send() {
         </View>
       </Section>
 
-      <Section header="Xác thực">
-        <Input placeholder="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
-      </Section>
+      {saved === false && (
+        <Section header="Xác thực" footer={Passphrase.biometricAvailable() ? 'Chỉ nhập lần đầu. Sau đó gửi bằng Face ID.' : undefined}>
+          <Input placeholder="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
+        </Section>
+      )}
 
-      <Button icon="paperplane.fill" title="Gửi" onPress={confirm} busy={busy} disabled={!to || !(amt > 0) || tooMuch || !pass} />
+      <Button icon={saved ? 'faceid' : 'paperplane.fill'} title="Gửi" onPress={confirm} busy={busy}
+        disabled={saved === undefined || !to || !(amt > 0) || tooMuch || (!saved && !pass)} />
     </ScrollView>
   );
 }

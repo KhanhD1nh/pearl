@@ -22,9 +22,7 @@ import (
 	"github.com/pearl-research-labs/pearl/wallet/walletdb"
 )
 
-var (
-	cfg *config
-)
+var cfg *config
 
 func main() {
 	// Use all processor cores.
@@ -87,6 +85,7 @@ func walletMain() error {
 		log.Errorf("Unable to create RPC servers: %v", err)
 		return err
 	}
+	setLegacyRPCServer(legacyRPCServer)
 
 	// Create and start chain RPC client so it's ready to connect to
 	// the wallet when loaded later.

@@ -19,21 +19,56 @@ package main
 import "C"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"sync"
+
+	"github.com/pearl-research-labs/pearl/wallet/rpc/legacyrpc"
 )
 
 var (
 	mobileMu      sync.Mutex
 	mobileStarted bool
 	mobileErr     error
+	mobileRPC     http.Handler // set by walletMain once the RPC server exists
 )
+
+func setLegacyRPCServer(s *legacyrpc.Server) {
+	mobileMu.Lock()
+	defer mobileMu.Unlock()
+	if s != nil {
+		mobileRPC = s.Handler()
+	}
+}
+
+// OysterRPC runs one JSON-RPC request through the RPC server's handler
+// in-process, with the same Basic auth as over HTTP. iOS drops the loopback
+// socket of a backgrounded app, so the app must not depend on it.
+// Returns {"result": {"status": <http status>, "body": <response text>}}.
+// Blocking: call off the main thread.
+//
+//export OysterRPC
+func OysterRPC(authJSON, bodyJSON *C.char) *C.char {
+	mobileMu.Lock()
+	h := mobileRPC
+	mobileMu.Unlock()
+	if h == nil {
+		return mobileReply(nil, errors.New("oyster RPC not ready"))
+	}
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(C.GoString(bodyJSON))))
+	req.Header.Set("Authorization", C.GoString(authJSON))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return mobileReply(map[string]any{"status": rec.Code, "body": rec.Body.String()}, nil)
+}
 
 func mobileReply(result any, err error) *C.char {
 	out := map[string]any{"result": result}

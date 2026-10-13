@@ -7,6 +7,7 @@ const N = requireNativeModule<{
   create(args: string, create: string): Promise<string>;
   start(args: string): string;
   status(): string;
+  rpc(auth: string, body: string): Promise<string>;
 }>('Oyster');
 
 function unwrap<T>(json: string): T {
@@ -22,3 +23,6 @@ export const create = async (args: string[], c: { PrivatePassphrase: string; See
   unwrap<string>(await N.create(JSON.stringify(args), JSON.stringify(c)));
 export const start = (args: string[]) => unwrap<boolean>(N.start(JSON.stringify(args)));
 export const status = () => unwrap<boolean>(N.status());
+// One JSON-RPC call straight into oyster's handler; returns HTTP status and body text.
+export const rpc = async (auth: string, body: string) =>
+  unwrap<{ status: number; body: string }>(await N.rpc(auth, body));

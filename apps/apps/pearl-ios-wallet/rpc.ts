@@ -1,14 +1,16 @@
-// JSON-RPC client for the embedded oyster wallet (wallet/rpcserver.go).
+import * as Oyster from '@/modules/oyster';
+
+// JSON-RPC to the embedded oyster wallet (wallet/rpcserver.go), called in-process via
+// OysterRPC rather than fetch: iOS drops the app's loopback socket after a while in background.
 export type Conn = { url: string; user: string; pass: string };
 
 export async function rpc<T>(c: Conn, method: string, params: unknown[] = []): Promise<T> {
-  const res = await fetch(c.url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Basic ' + btoa(`${c.user}:${c.pass}`) },
-    body: JSON.stringify({ jsonrpc: '1.0', id: Date.now(), method, params }),
-  });
+  const res = await Oyster.rpc(
+    'Basic ' + btoa(`${c.user}:${c.pass}`),
+    JSON.stringify({ jsonrpc: '1.0', id: Date.now(), method, params }),
+  );
   if (res.status === 401) throw new Error('RPC auth failed');
-  const body = await res.json();
+  const body = JSON.parse(res.body);
   if (body.error) throw new RpcError(body.error.code, body.error.message ?? JSON.stringify(body.error));
   return body.result as T;
 }

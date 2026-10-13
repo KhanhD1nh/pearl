@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { Button, C, haptic, Input, Row, Section } from '@/components/ui';
+import * as Passphrase from '@/lib/passphrase';
 import { useWallet } from '@/lib/wallet';
 import { wallet } from '@/rpc';
 
@@ -49,7 +50,7 @@ export default function Settings() {
         <Input placeholder="Passphrase mới" secureTextEntry value={next} onChangeText={setNext} textContentType="newPassword" />
         <View style={{ padding: 12 }}>
           <Button kind="tinted" title="Đổi passphrase" busy={busy === 'pass'} disabled={!cur || next.length < 8}
-            onPress={() => run('pass', () => wallet.changePass(c, cur, next), 'Đã đổi passphrase')} />
+            onPress={() => run('pass', async () => { await wallet.changePass(c, cur, next); await Passphrase.forget(); }, 'Đã đổi passphrase')} />
         </View>
       </Section>
 

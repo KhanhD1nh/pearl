@@ -33,5 +33,10 @@ public class OysterModule: Module {
     Function("status") { () -> String in
       call { OysterStatus() }
     }
+
+    // In-process JSON-RPC (no socket). AsyncFunction runs off the JS thread.
+    AsyncFunction("rpc") { (auth: String, body: String) -> String in
+      call { auth.withCString { a in body.withCString { b in OysterRPC(UnsafeMutablePointer(mutating: a), UnsafeMutablePointer(mutating: b)) } } }
+    }
   }
 }
