@@ -10,6 +10,11 @@ on:
       - 'apps/apps/pearl-ios-wallet/**'
       - 'apps/pnpm-lock.yaml'
       - '.github/workflows/pearl-ios-wallet.yml'
+      - 'wallet/**'
+      - 'spv/**'
+      - 'node/**'
+      - 'zk-pow/**'
+      - 'xmss/**'
 
 permissions:
   contents: read
@@ -26,6 +31,38 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
+
+      # Embedded oyster (SPV wallet) as a static lib for the app.
+      - uses: ./.github/actions/setup
+
+      - name: Build oyster for iOS (zk-pow + xmss + Go c-archive)
+        env:
+          CGO_ENABLED: 1
+          CGO_LDFLAGS_ALLOW: '.*zk_pow_ffi.*'
+        run: |
+          set -eux
+          SDK=$(xcrun -sdk iphoneos --show-sdk-path)
+          CLANG=$(xcrun -sdk iphoneos -f clang)
+          CLANGXX=$(xcrun -sdk iphoneos -f clang++)
+          export IPHONEOS_DEPLOYMENT_TARGET=15.1
+          (cd zk-pow && cargo run --release --no-default-features --bin build_cache src/circuit/v2_cache.bin src/v1/v1_cache.bin)
+          rustup target add aarch64-apple-ios
+          (cd zk-pow/bindings/go && cargo build --release --target aarch64-apple-ios)
+          # node/zkpow/verify.go links target/release/ for darwin (GOOS=ios implies darwin).
+          mkdir -p zk-pow/bindings/go/target/release
+          cp zk-pow/bindings/go/target/aarch64-apple-ios/release/libzk_pow_ffi.a zk-pow/bindings/go/target/release/
+          make -C xmss CC="$CLANG -isysroot $SDK -arch arm64 -miphoneos-version-min=15.1" \
+            CXX="$CLANGXX -isysroot $SDK -arch arm64 -miphoneos-version-min=15.1" AR="$(xcrun -sdk iphoneos -f ar)" lib
+          GOOS=ios GOARCH=arm64 CC="$CLANG -isysroot $SDK -arch arm64 -miphoneos-version-min=15.1" \
+            CXX="$CLANGXX -isysroot $SDK -arch arm64 -miphoneos-version-min=15.1" \
+            go build -buildmode=c-archive -tags xmss,zkpow -o build-ios/liboyster.a ./wallet
+          ls -la build-ios
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: liboyster-ios
+          path: build-ios/
+          if-no-files-found: error
 
       - uses: pnpm/action-setup@739bfe42ca9233c5e6aca07c1a25a9d34aca49b0 # v6.0.7
         with:
