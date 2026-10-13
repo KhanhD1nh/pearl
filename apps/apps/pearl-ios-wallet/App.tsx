@@ -225,7 +225,18 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
 
   if (screen === 'send') return <Send c={c} balance={balance} onDone={() => { setScreen('home'); load(); }} />;
   if (screen === 'settings') return <Settings c={c} network={network} onDone={() => { setScreen('home'); load(); }} />;
-  const pct = sync && sync.best_peer_height ? Math.min(1, sync.block_height / sync.best_peer_height) : 0;
+  // Phases mirror desktop walletStore.ts derivePhase(): headers, filter headers, then blocks.
+  let pct = 0;
+  let status = 'Đang kết nối…';
+  if (sync?.synced) { pct = 1; status = '● Đã đồng bộ'; }
+  else if (sync && sync.best_peer_height <= 0) status = `Đang tìm peer (${sync.connections} kết nối)`;
+  else if (sync) {
+    const [label, h] = sync.header_height < sync.best_peer_height ? ['Tải header', sync.header_height]
+      : sync.filter_header_height < sync.header_height ? ['Tải filter', sync.filter_header_height]
+      : ['Quét block', sync.block_height];
+    pct = Math.min(1, h / sync.best_peer_height);
+    status = `${label} ${h.toLocaleString()} / ${sync.best_peer_height.toLocaleString()} · ${sync.connections} peer`;
+  }
   return (
     <FlatList
       contentContainerStyle={s.pad}
@@ -248,9 +259,9 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
             <Text style={s.balance} adjustsFontSizeToFit numberOfLines={1}>
               {balance === undefined ? '—' : balance.toFixed(8)} <Text style={s.unit}>PRL</Text>
             </Text>
-            <View style={s.progress}><View style={[s.progressFill, { width: `${(sync?.synced ? 1 : pct) * 100}%` }]} /></View>
+            <View style={s.progress}><View style={[s.progressFill, { width: `${pct * 100}%` }]} /></View>
             <Text style={s.balanceSub}>
-              {sync ? (sync.synced ? '● Đã đồng bộ' : `Đang đồng bộ ${sync.block_height.toLocaleString()} / ${sync.best_peer_height.toLocaleString()}`) : 'Đang kết nối…'}
+              {status}
             </Text>
           </View>
 

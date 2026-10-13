@@ -14,7 +14,7 @@ export async function rpc<T>(c: Conn, method: string, params: unknown[] = []): P
 }
 
 export type Tx = { txid: string; category: string; amount: number; fee?: number; confirmations: number; time: number; address?: string };
-export type Sync = { header_height: number; block_height: number; best_peer_height: number; synced: boolean };
+export type Sync = { header_height: number; filter_header_height: number; block_height: number; best_peer_height: number; connections: number; synced: boolean };
 
 // Same calls/params as pearl-desktop-wallet wallet-rpc-methods.ts
 export const wallet = {
