@@ -4,6 +4,12 @@ name: Pearl iOS Wallet (unsigned IPA)
 # Sign + install with Sideloadly/AltStore using a free Apple ID (7-day expiry).
 on:
   workflow_dispatch:
+  push:
+    branches: [ios-wallet]
+    paths:
+      - 'apps/apps/pearl-ios-wallet/**'
+      - 'apps/pnpm-lock.yaml'
+      - '.github/workflows/pearl-ios-wallet.yml'
 
 permissions:
   contents: read
