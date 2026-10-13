@@ -13,7 +13,7 @@ public class OysterModule: Module {
     Name("Oyster")
 
     Function("dataDir") { () -> String in
-      FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("oyster").path
     }
 

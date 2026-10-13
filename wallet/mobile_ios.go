@@ -21,7 +21,11 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+	"runtime/debug"
+	"strings"
 	"sync"
 )
 
@@ -38,6 +42,27 @@ func mobileReply(result any, err error) *C.char {
 	}
 	b, _ := json.Marshal(out)
 	return C.CString(string(b))
+}
+
+// mobileRecover turns a Go panic into an error instead of killing the app.
+func mobileRecover(err *error) {
+	if r := recover(); r != nil {
+		*err = fmt.Errorf("panic: %v\n%s", r, debug.Stack())
+	}
+}
+
+// mobileStderr sends stdout/stderr (oyster prints errors there) to a file,
+// since an iOS app has no console. Read it from the app data dir.
+func mobileStderr(args []string) {
+	for _, a := range args {
+		if dir, ok := strings.CutPrefix(a, "--appdata="); ok {
+			_ = os.MkdirAll(dir, 0o700)
+			f, err := os.OpenFile(filepath.Join(dir, "stderr.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+			if err == nil {
+				os.Stdout, os.Stderr = f, f
+			}
+		}
+	}
 }
 
 func mobileArgs(argsJSON *C.char) ([]string, error) {
@@ -64,12 +89,19 @@ func OysterCreate(argsJSON, createJSON *C.char) *C.char {
 		return mobileReply(nil, err)
 	}
 	os.Args = append(args, "--noinitialload")
-	c, _, err := loadConfig()
-	if err != nil {
-		return mobileReply(nil, err)
-	}
-	cfg = c
-	seed, err := createWalletFromJSON(c, []byte(C.GoString(createJSON)))
+	mobileStderr(args)
+	seed, err := func() (seed string, err error) {
+		defer mobileRecover(&err)
+		c, _, err := loadConfig()
+		if err != nil {
+			return "", err
+		}
+		cfg = c
+		if err := checkCreateDir(networkDir(c.AppDataDir.Value, activeNet.Params)); err != nil {
+			return "", err
+		}
+		return createWalletFromJSON(c, []byte(C.GoString(createJSON)))
+	}()
 	return mobileReply(seed, err)
 }
 
@@ -89,8 +121,12 @@ func OysterStart(argsJSON *C.char) *C.char {
 	}
 	mobileStarted = true
 	os.Args = args
+	mobileStderr(args)
 	go func() {
-		err := walletMain()
+		err := func() (err error) {
+			defer mobileRecover(&err)
+			return walletMain()
+		}()
 		if err == nil {
 			err = errors.New("oyster stopped")
 		}

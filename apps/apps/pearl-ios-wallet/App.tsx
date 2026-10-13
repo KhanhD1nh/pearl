@@ -13,7 +13,7 @@ const KEY = 'pearl-setup';
 const PORT = 8335;
 const conn = (s: Setup): Conn => ({ url: `http://127.0.0.1:${PORT}`, user: s.user, pass: s.pass });
 const args = (s: Setup) => [
-  '--usespv', `--appdata=${Oyster.dataDir()}`, `--username=${s.user}`, `--password=${s.pass}`,
+  '--usespv', `--appdata=${Oyster.dataDir()}`, `--logdir=${Oyster.dataDir()}/logs`, `--username=${s.user}`, `--password=${s.pass}`,
   `--rpclisten=127.0.0.1:${PORT}`, '--noservertls', ...(s.network === 'testnet2' ? ['--testnet2'] : []),
 ];
 // ponytail: Math.random creds; RPC only listens on 127.0.0.1 inside the app. Use expo-crypto if exposed further.

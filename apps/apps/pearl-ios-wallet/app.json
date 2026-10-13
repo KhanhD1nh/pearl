@@ -9,7 +9,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "ai.pearlresearch.wallet",
-      "config": { "usesNonExemptEncryption": false }
+      "config": { "usesNonExemptEncryption": false },
+      "infoPlist": { "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true }, "UIFileSharingEnabled": true, "LSSupportsOpeningDocumentsInPlace": true }
     },
     "plugins": ["expo-secure-store"],
     "web": {
