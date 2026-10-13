@@ -1,9 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
+import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View,
 } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import * as Oyster from './modules/oyster';
 import { Conn, Sync, Tx, wallet } from './rpc';
 
@@ -178,7 +180,47 @@ function Onboard({ onDone }: { onDone: (s: Setup) => Promise<void> }) {
   );
 }
 
-type Screen = 'home' | 'send' | 'settings';
+type Screen = 'home' | 'send' | 'receive' | 'settings';
+
+function Receive({ c, onDone }: { c: Conn; onDone: () => void }) {
+  const [addr, setAddr] = useState<string>();
+  useEffect(() => {
+    wallet.addresses(c)
+      .then(a => a[0] ?? wallet.newAddress(c))
+      .then(setAddr, e => Alert.alert('Lỗi', String(e.message)));
+  }, [c]);
+  const copy = async () => {
+    await Clipboard.setStringAsync(addr ?? '');
+    Alert.alert('Đã sao chép địa chỉ');
+  };
+  return (
+    <ScrollView contentContainerStyle={s.pad}>
+      <Header title="Nhận Pearl" onBack={onDone} />
+      <View style={{ alignItems: 'center', gap: 6 }}>
+        <Text style={s.h2}>Nhận vào ví default</Text>
+        <Text style={[s.muted, { textAlign: 'center' }]}>Chia sẻ địa chỉ hoặc mã QR để nhận Pearl</Text>
+      </View>
+      <View style={s.qr}>
+        {addr ? <QRCode value={addr} size={200} /> : <ActivityIndicator />}
+      </View>
+      <Pressable style={s.card} onPress={copy} disabled={!addr}>
+        <Text style={s.muted}>Địa chỉ nhận của bạn</Text>
+        <View style={s.kv}>
+          <Text style={[s.mono, { flex: 1 }]} selectable>{addr ?? '…'}</Text>
+          <Text style={s.icon}>⧉</Text>
+        </View>
+      </Pressable>
+      <View style={s.hint}>
+        <Text style={s.txTitle}>Cách nhận Pearl:</Text>
+        <Text style={s.muted}>• Gửi địa chỉ này cho người gửi</Text>
+        <Text style={s.muted}>• Hoặc cho họ quét mã QR</Text>
+        <Text style={s.muted}>• Giao dịch sẽ hiện trong mục Hoạt động</Text>
+        <Text style={s.muted}>• Chờ xác nhận trước khi coi là đã nhận tiền</Text>
+      </View>
+      <Btn title="Chia sẻ địa chỉ" kind="ghost" disabled={!addr} onPress={() => Share.share({ message: addr ?? '' })} />
+    </ScrollView>
+  );
+}
 
 function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
   const [balance, setBalance] = useState<number>();
@@ -206,16 +248,6 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
     return () => clearInterval(t);
   }, [load, c]);
 
-  const receive = async () => {
-    try {
-      const addr = (await wallet.addresses(c))[0] ?? (await wallet.newAddress(c));
-      // ponytail: share sheet instead of QR; add react-native-qrcode-svg if users need scanning.
-      await Share.share({ message: addr });
-    } catch (e) {
-      Alert.alert('Lỗi', String((e as Error).message));
-    }
-  };
-
   const txMenu = (t: Tx) => {
     const run = (f: () => Promise<unknown>) => f().then(load).catch(e => Alert.alert('Lỗi', String(e.message)));
     Alert.alert('Giao dịch', t.txid, [
@@ -229,6 +261,7 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
   };
 
   if (screen === 'send') return <Send c={c} balance={balance} network={network} onDone={() => { setScreen('home'); load(); }} />;
+  if (screen === 'receive') return <Receive c={c} onDone={() => setScreen('home')} />;
   if (screen === 'settings') return <Settings c={c} network={network} onDone={() => { setScreen('home'); load(); }} />;
   // Phases mirror desktop walletStore.ts derivePhase(): headers, filter headers, then blocks.
   let pct = 0;
@@ -271,7 +304,7 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
           </View>
 
           <View style={s.actions}>
-            <Pressable style={s.action} onPress={receive}><Text style={s.actionIcon}>↓</Text><Text style={s.actionText}>Nhận</Text></Pressable>
+            <Pressable style={s.action} onPress={() => setScreen('receive')}><Text style={s.actionIcon}>↓</Text><Text style={s.actionText}>Nhận</Text></Pressable>
             <Pressable style={s.action} onPress={() => setScreen('send')}><Text style={s.actionIcon}>↑</Text><Text style={s.actionText}>Gửi</Text></Pressable>
           </View>
 
@@ -487,7 +520,10 @@ const s = StyleSheet.create({
   txIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   txTitle: { color: C.fg, fontSize: 15, fontWeight: '600' },
   txAmt: { fontSize: 15, fontWeight: '700' },
-  kv: { flexDirection: 'row', justifyContent: 'space-between' },
+  kv: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  qr: { alignSelf: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 16, minWidth: 228, minHeight: 228, alignItems: 'center', justifyContent: 'center' },
+  mono: { color: C.fg, fontFamily: 'Menlo', fontSize: 13 },
+  hint: { borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 16, gap: 6 },
   pctRow: { flexDirection: 'row', gap: 8 },
   pct: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   fee: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingVertical: 12, alignItems: 'center', gap: 4 },
