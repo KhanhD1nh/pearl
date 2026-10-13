@@ -1,0 +1,4 @@
+module COyster [system] {
+  header "../lib/liboyster.h"
+  export *
+}

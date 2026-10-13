@@ -187,9 +187,13 @@ func createWalletFromJSON(cfg *config, data []byte) (string, error) {
 		birthday = time.Unix(secs, 0)
 	}
 
-	// Create the wallet via loader.
+	// Create the wallet via loader, then close it so the database can be
+	// reopened in the same process (embedded iOS build).
 	if _, err := loader.CreateNewWallet(pubPass, privPass, seed, birthday); err != nil {
 		return "", fmt.Errorf("unable to create wallet: %w", err)
+	}
+	if err := loader.UnloadWallet(); err != nil {
+		return "", fmt.Errorf("unable to close wallet: %w", err)
 	}
 
 	return seedStr, nil
@@ -201,7 +205,7 @@ func checkCreateDir(path string) error {
 	if fi, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			// Attempt data directory creation
-			if err = os.MkdirAll(path, 0700); err != nil {
+			if err = os.MkdirAll(path, 0o700); err != nil {
 				return fmt.Errorf("cannot create directory: %w", err)
 			}
 		} else {
