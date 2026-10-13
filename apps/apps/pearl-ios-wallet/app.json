@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Pearl Wallet",
+    "slug": "pearl-ios-wallet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ai.pearlresearch.wallet",
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "plugins": ["expo-secure-store"],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+name: Pearl iOS Wallet (unsigned IPA)
+
+# Builds an UNSIGNED .ipa on a GitHub macOS runner (no EAS/Expo cloud).
+# Sign + install with Sideloadly/AltStore using a free Apple ID (7-day expiry).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '8.15.6'
+  APP_DIR: 'apps/apps/pearl-ios-wallet'
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@739bfe42ca9233c5e6aca07c1a25a9d34aca49b0 # v6.0.7
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install deps
+        working-directory: apps
+        run: pnpm install --frozen-lockfile --filter pearl-ios-wallet...
+
+      - name: Generate native iOS project
+        working-directory: ${{ env.APP_DIR }}
+        run: pnpm exec expo prebuild -p ios --clean
+
+      - name: Build (unsigned)
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          WS=$(ls -d *.xcworkspace | head -1)
+          SCHEME="${WS%.xcworkspace}"
+          xcodebuild -workspace "$WS" -scheme "$SCHEME" -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package IPA
+        working-directory: ${{ env.APP_DIR }}/ios
+        run: |
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -1)
+          mkdir -p Payload && cp -R "$APP" Payload/
+          zip -qry PearlWallet-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pearl-ios-wallet-unsigned-ipa
+          path: ${{ env.APP_DIR }}/ios/PearlWallet-unsigned.ipa
+          if-no-files-found: error
