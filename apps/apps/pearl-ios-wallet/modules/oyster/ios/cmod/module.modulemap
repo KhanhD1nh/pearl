@@ -1,4 +1,4 @@
 module COyster [system] {
-  header "../lib/liboyster.h"
+  header "../lib/liboysterwallet.h"
   export *
 }

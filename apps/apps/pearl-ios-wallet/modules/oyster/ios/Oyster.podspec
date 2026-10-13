@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   # Built by CI (.github/workflows/pearl-ios-wallet.yml) into ios/lib/.
   s.source_files        = '*.swift'
   s.preserve_paths      = 'lib/*', 'cmod/*'
-  s.vendored_libraries  = 'lib/liboyster.a', 'lib/libzk_pow_ffi.a', 'lib/libxmss.a'
+  s.vendored_libraries  = 'lib/liboysterwallet.a', 'lib/libzk_pow_ffi.a', 'lib/libxmss.a'
   s.frameworks          = 'Security', 'CoreFoundation'
   s.libraries           = 'resolv', 'c++'
   s.pod_target_xcconfig = { 'SWIFT_INCLUDE_PATHS' => '$(PODS_TARGET_SRCROOT)/cmod' }
