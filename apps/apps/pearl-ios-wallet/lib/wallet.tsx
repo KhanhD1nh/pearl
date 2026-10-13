@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import * as Oyster from '@/modules/oyster';
 import { Conn, Sync, Tx, wallet } from '@/rpc';
 
@@ -27,6 +27,7 @@ type State = {
   txs?: Tx[]; // undefined until first load
   loading: boolean;
   load: () => Promise<void>;
+  error?: string; // last refresh failure, cleared on success
 };
 
 const Ctx = createContext<State | null>(null);
@@ -39,6 +40,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [sync, setSync] = useState<Sync>();
   const [txs, setTxs] = useState<Tx[]>();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
   const c: Conn = { url: `http://127.0.0.1:${PORT}`, user: setup?.user ?? '', pass: setup?.pass ?? '' };
 
   useEffect(() => {
@@ -74,6 +76,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setup]);
 
+  // Errors go to `error` (shown inline), not Alert: polling every 10s would spam
+  // alerts while iOS suspends the app or oyster is busy.
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -81,8 +85,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setBalance(b);
       setSync(y);
       setTxs([...t].sort((a, z) => z.time - a.time));
+      setError(undefined);
     } catch (e) {
-      Alert.alert('Lỗi', String((e as Error).message));
+      setError(String((e as Error).message));
     } finally {
       setLoading(false);
     }
@@ -91,10 +96,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    load();
-    // Refresh everything every 10s so incoming payments show up without pull-to-refresh.
-    const t = setInterval(load, 10000);
-    return () => clearInterval(t);
+    let t: number | undefined;
+    // Poll only while foreground; iOS suspends the app (and oyster) in background.
+    const start = () => { load(); t ??= setInterval(load, 10000); };
+    const stop = () => { clearInterval(t); t = undefined; };
+    start();
+    const sub = AppState.addEventListener('change', s => (s === 'active' ? start() : stop()));
+    return () => { stop(); sub.remove(); };
   }, [ready, load]);
 
   const saveSetup = async (s: Setup) => {
@@ -102,7 +110,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setSetup(s);
   };
 
-  return <Ctx.Provider value={{ setup, ready, saveSetup, c, balance, sync, txs, loading, load }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ setup, ready, saveSetup, c, balance, sync, txs, loading, load, error }}>{children}</Ctx.Provider>;
 }
 
 // Phases mirror desktop walletStore.ts derivePhase(): headers, filter headers, then blocks.

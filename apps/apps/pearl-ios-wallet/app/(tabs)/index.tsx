@@ -4,7 +4,7 @@ import { C, CircleAction, fmt, Icon, Logo, Row, Section, TxRow } from '@/compone
 import { syncStatus, useWallet } from '@/lib/wallet';
 
 export default function Home() {
-  const { balance, sync, txs, loading, load, setup } = useWallet();
+  const { balance, sync, txs, loading, load, setup, error } = useWallet();
   const st = syncStatus(sync);
   const recent = txs?.slice(0, 5);
 
@@ -39,6 +39,12 @@ export default function Home() {
         <CircleAction icon="arrow.down" label="Nhận" onPress={() => router.push('/receive')} />
         <CircleAction icon="arrow.clockwise" label="Làm mới" onPress={load} />
       </View>
+
+      {error && (
+        <Section footer={error}>
+          <Row icon="exclamationmark.triangle.fill" iconBg={C.red} title="Mất kết nối với ví" value="Thử lại" onPress={load} />
+        </Section>
+      )}
 
       {/* Sync status */}
       <Section>
