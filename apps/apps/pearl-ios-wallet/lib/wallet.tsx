@@ -78,8 +78,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // Errors go to `error` (shown inline), not Alert: polling every 10s would spam
   // alerts while iOS suspends the app or oyster is busy.
-  const load = useCallback(async () => {
-    setLoading(true);
+  // `loading` drives the pull-to-refresh spinner, so only user refreshes set it;
+  // background polls stay silent or the list jumps every 10s.
+  const fetchAll = useCallback(async () => {
     try {
       const [b, t, y] = await Promise.all([wallet.balance(c), wallet.txs(c), wallet.sync(c)]);
       setBalance(b);
@@ -88,22 +89,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setError(undefined);
     } catch (e) {
       setError(String((e as Error).message));
-    } finally {
-      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setup]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchAll();
+    setLoading(false);
+  }, [fetchAll]);
 
   useEffect(() => {
     if (!ready) return;
     let t: number | undefined;
     // Poll only while foreground; iOS suspends the app (and oyster) in background.
-    const start = () => { load(); t ??= setInterval(load, 10000); };
+    const start = () => { fetchAll(); t ??= setInterval(fetchAll, 10000); };
     const stop = () => { clearInterval(t); t = undefined; };
     start();
     const sub = AppState.addEventListener('change', s => (s === 'active' ? start() : stop()));
     return () => { stop(); sub.remove(); };
-  }, [ready, load]);
+  }, [ready, fetchAll]);
 
   const saveSetup = async (s: Setup) => {
     await SecureStore.setItemAsync(KEY, JSON.stringify(s));
