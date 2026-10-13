@@ -3,7 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View,
+  ActivityIndicator, Alert, FlatList, Image, Pressable, RefreshControl, SafeAreaView, ScrollView, Share, StyleSheet, Text, TextInput, TextInputProps, View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Oyster from './modules/oyster';
@@ -57,7 +57,7 @@ export default function App() {
   }, [setup]);
 
   let body;
-  if (setup === undefined) body = <ActivityIndicator color={C.primary} />;
+  if (setup === undefined) body = <View style={s.center}><ActivityIndicator color={C.primary} /></View>;
   else if (!setup) body = <Onboard onDone={async s => { await SecureStore.setItemAsync(KEY, JSON.stringify(s)); setSetup(s); }} />;
   else if (!ready) body = <View style={s.center}><Logo /><ActivityIndicator color={C.primary} /><Text style={s.muted}>Đang khởi động ví…</Text></View>;
   else body = <Wallet c={conn(setup)} network={setup.network} />;
@@ -75,12 +75,8 @@ const C = {
   primary: '#cfe98a', accent: '#8fd3da', red: '#ff7a7a', green: '#cfe98a',
 };
 
-function Logo() {
-  return (
-    <View style={s.logo}>
-      <Text style={s.logoText}>P</Text>
-    </View>
-  );
+function Logo({ size = 36 }: { size?: number }) {
+  return <Image source={require('./assets/icon.png')} style={{ width: size, height: size, borderRadius: size * 0.22 }} />;
 }
 
 function Btn({ title, onPress, kind = 'primary', disabled, busy }: {
@@ -160,9 +156,9 @@ function Onboard({ onDone }: { onDone: (s: Setup) => Promise<void> }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
       <View style={s.hero}>
-        <Logo />
+        <Logo size={72} />
         <Text style={s.title}>Pearl Wallet</Text>
         <Text style={s.muted}>Ví SPV chạy ngay trên iPhone. Khóa không rời máy.</Text>
       </View>
@@ -203,7 +199,7 @@ function Receive({ c, onDone }: { c: Conn; onDone: () => void }) {
       <View style={s.qr}>
         {addr ? <QRCode value={addr} size={200} /> : <ActivityIndicator />}
       </View>
-      <Pressable style={s.card} onPress={copy} disabled={!addr}>
+      <Pressable style={({ pressed }) => [s.card, pressed && s.pressed]} onPress={copy} disabled={!addr}>
         <Text style={s.muted}>Địa chỉ nhận của bạn</Text>
         <View style={s.kv}>
           <Text style={[s.mono, { flex: 1 }]} selectable>{addr ?? '…'}</Text>
@@ -304,8 +300,8 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
           </View>
 
           <View style={s.actions}>
-            <Pressable style={s.action} onPress={() => setScreen('receive')}><Text style={s.actionIcon}>↓</Text><Text style={s.actionText}>Nhận</Text></Pressable>
-            <Pressable style={s.action} onPress={() => setScreen('send')}><Text style={s.actionIcon}>↑</Text><Text style={s.actionText}>Gửi</Text></Pressable>
+            <Pressable style={({ pressed }) => [s.action, pressed && s.pressed]} onPress={() => setScreen('receive')}><Text style={s.actionIcon}>↓</Text><Text style={s.actionText}>Nhận</Text></Pressable>
+            <Pressable style={({ pressed }) => [s.action, pressed && s.pressed]} onPress={() => setScreen('send')}><Text style={s.actionIcon}>↑</Text><Text style={s.actionText}>Gửi</Text></Pressable>
           </View>
 
           <Text style={s.section}>Hoạt động</Text>
@@ -316,7 +312,7 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
       renderItem={({ item }) => {
         const inc = item.amount >= 0;
         return (
-          <Pressable style={s.tx} onPress={() => txMenu(item)}>
+          <Pressable style={({ pressed }) => [s.tx, pressed && s.pressed]} onPress={() => txMenu(item)}>
             <View style={[s.txIcon, { backgroundColor: inc ? '#3d4a2a' : '#4a2f2f' }]}>
               <Text style={{ color: inc ? C.green : C.red, fontSize: 18, fontWeight: '700' }}>{inc ? '↓' : '↑'}</Text>
             </View>
@@ -359,7 +355,7 @@ function Send({ c, balance, network, onDone }: { c: Conn; balance?: number; netw
   }, [network]);
 
   const submit = async () => {
-    const amt = Number(amount);
+    const amt = Number(amount.replace(',', '.'));
     if (!(amt > 0) || amt > spendable) return Alert.alert('Số tiền không hợp lệ');
     setBusy(true);
     try {
@@ -389,7 +385,7 @@ function Send({ c, balance, network, onDone }: { c: Conn; balance?: number; netw
     ]);
 
   return (
-    <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
       <Header title="Gửi Pearl" onBack={onDone} />
       <View style={s.card}>
         <View style={s.kv}><Text style={s.muted}>Từ ví:</Text><Text style={s.txTitle}>default</Text></View>
@@ -401,7 +397,7 @@ function Send({ c, balance, network, onDone }: { c: Conn; balance?: number; netw
         <Text style={s.muted}>Khả dụng: {spendable.toFixed(8)} PRL (đã trừ {fee} PRL/kB phí)</Text>
         <View style={s.pctRow}>
           {[25, 50, 75, 100].map(p => (
-            <Pressable key={p} style={s.pct} onPress={() => setAmount(String(Number((spendable * p / 100).toFixed(8))))}>
+            <Pressable key={p} style={({ pressed }) => [s.pct, pressed && s.pressed]} onPress={() => setAmount(String(Number((spendable * p / 100).toFixed(8))))}>
               <Text style={s.segText}>{p === 100 ? 'MAX' : `${p}%`}</Text>
             </Pressable>
           ))}
@@ -415,7 +411,7 @@ function Send({ c, balance, network, onDone }: { c: Conn; balance?: number; netw
         <View style={s.card}>
           <View style={s.pctRow}>
             {FEE_LEVELS.map(([k, icon, name, n]) => (
-              <Pressable key={k} style={[s.fee, level === k && s.feeActive]} onPress={() => setLevel(k)}>
+              <Pressable key={k} style={({ pressed }) => [s.fee, level === k && s.feeActive, pressed && s.pressed]} onPress={() => setLevel(k)}>
                 <Text style={[s.feeName, level === k && { color: C.primary }]}>{icon} {name}</Text>
                 <Text style={s.muted}>~{n} block</Text>
               </Pressable>
@@ -449,7 +445,7 @@ function Settings({ c, network, onDone }: { c: Conn; network: Setup['network']; 
   };
 
   return (
-    <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
       <Header title="Cài đặt" onBack={onDone} />
       <View style={s.card}>
         <Text style={s.label}>Mạng</Text>
@@ -476,8 +472,8 @@ function Settings({ c, network, onDone }: { c: Conn; network: Setup['network']; 
 }
 
 const s = StyleSheet.create({
-  fill: { flex: 1, justifyContent: 'center', backgroundColor: C.bg },
-  center: { alignItems: 'center', gap: 16 },
+  fill: { flex: 1, backgroundColor: C.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   pad: { padding: 20, gap: 16, flexGrow: 1 },
   hero: { alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 8 },
   title: { color: C.fg, fontSize: 30, fontWeight: '700' },
@@ -486,8 +482,6 @@ const s = StyleSheet.create({
   muted: { color: C.muted, fontSize: 13 },
   label: { color: C.muted, fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   section: { color: C.fg, fontSize: 17, fontWeight: '700', marginTop: 4 },
-  logo: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  logoText: { color: '#000', fontSize: 20, fontWeight: '800' },
   card: { backgroundColor: C.card, borderRadius: 16, padding: 16, gap: 14 },
   in: { backgroundColor: C.bg, color: C.fg, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 14, fontSize: 16 },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
@@ -506,7 +500,7 @@ const s = StyleSheet.create({
   badge: { color: '#000', backgroundColor: C.accent, fontSize: 10, fontWeight: '800', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' },
   balanceCard: { backgroundColor: C.card, borderRadius: 20, padding: 20, gap: 8, borderWidth: 1, borderColor: C.line },
   balanceLabel: { color: C.muted, fontSize: 13 },
-  balance: { color: C.fg, fontSize: 36, fontWeight: '700' },
+  balance: { color: C.fg, fontSize: 36, fontWeight: '700', fontVariant: ['tabular-nums'] },
   unit: { color: C.primary, fontSize: 18, fontWeight: '700' },
   balanceSub: { color: C.muted, fontSize: 12 },
   progress: { height: 4, backgroundColor: C.line, borderRadius: 2, overflow: 'hidden', marginTop: 8 },
@@ -519,7 +513,8 @@ const s = StyleSheet.create({
   tx: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 14, padding: 14 },
   txIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   txTitle: { color: C.fg, fontSize: 15, fontWeight: '600' },
-  txAmt: { fontSize: 15, fontWeight: '700' },
+  txAmt: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  pressed: { opacity: 0.6, transform: [{ scale: 0.98 }] },
   kv: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   qr: { alignSelf: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 16, minWidth: 228, minHeight: 228, alignItems: 'center', justifyContent: 'center' },
   mono: { color: C.fg, fontFamily: 'Menlo', fontSize: 13 },
