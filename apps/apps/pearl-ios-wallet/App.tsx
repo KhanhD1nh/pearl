@@ -23,7 +23,15 @@ export default function App() {
   const [setup, setSetup] = useState<Setup | null | undefined>(undefined);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    SecureStore.getItemAsync(KEY).then(v => setSetup(v ? JSON.parse(v) : null));
+    // Keychain survives app deletion but Documents (wallet.db) does not: drop stale setup.
+    SecureStore.getItemAsync(KEY).then(async v => {
+      const st: Setup | null = v ? JSON.parse(v) : null;
+      if (st && !Oyster.walletExists(st.network)) {
+        await SecureStore.deleteItemAsync(KEY);
+        return setSetup(null);
+      }
+      setSetup(st);
+    });
   }, []);
 
   useEffect(() => {

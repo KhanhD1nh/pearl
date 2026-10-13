@@ -17,6 +17,11 @@ public class OysterModule: Module {
         .appendingPathComponent("oyster").path
     }
 
+    // wallet.db lives in <dataDir>/<network name>/ (wallet/walletsetup.go networkDir).
+    Function("walletExists") { (dataDir: String, network: String) -> Bool in
+      FileManager.default.fileExists(atPath: dataDir + "/" + network + "/wallet.db")
+    }
+
     AsyncFunction("create") { (args: String, create: String) -> String in
       call { args.withCString { a in create.withCString { c in OysterCreate(UnsafeMutablePointer(mutating: a), UnsafeMutablePointer(mutating: c)) } } }
     }
