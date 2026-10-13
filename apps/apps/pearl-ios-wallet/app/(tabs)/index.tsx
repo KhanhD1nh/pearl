@@ -4,7 +4,7 @@ import { C, CircleAction, fmt, Icon, Logo, Row, Section, TxRow } from '@/compone
 import { syncStatus, useWallet } from '@/lib/wallet';
 
 export default function Home() {
-  const { balance, sync, txs, loading, load, setup, error } = useWallet();
+  const { balance, sync, txs, loading, load, pull, setup, error } = useWallet();
   const st = syncStatus(sync);
   const recent = txs?.slice(0, 5);
 
@@ -13,7 +13,7 @@ export default function Home() {
       style={{ backgroundColor: C.bg }}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: 16, gap: 28 }}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={C.accent} />}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={pull} tintColor={C.accent} />}
     >
       <Stack.Screen options={{ title: 'Pearl', headerShown: false }} />
 

@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Alert, AppState } from 'react-native';
 import * as Oyster from '@/modules/oyster';
 import { Conn, Sync, Tx, wallet } from '@/rpc';
@@ -26,7 +26,8 @@ type State = {
   sync?: Sync;
   txs?: Tx[]; // undefined until first load
   loading: boolean;
-  load: () => Promise<void>;
+  load: () => Promise<void>; // silent refresh
+  pull: () => Promise<void>; // pull-to-refresh, drives `loading`
   error?: string; // last refresh failure, cleared on success
 };
 
@@ -78,44 +79,51 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // Errors go to `error` (shown inline), not Alert: polling every 10s would spam
   // alerts while iOS suspends the app or oyster is busy.
-  // `loading` drives the pull-to-refresh spinner, so only user refreshes set it;
-  // background polls stay silent or the list jumps every 10s.
-  const fetchAll = useCallback(async () => {
-    try {
-      const [b, t, y] = await Promise.all([wallet.balance(c), wallet.txs(c), wallet.sync(c)]);
-      setBalance(b);
-      setSync(y);
-      setTxs([...t].sort((a, z) => z.time - a.time));
-      setError(undefined);
-    } catch (e) {
-      setError(String((e as Error).message));
-    }
+  // `load` is silent (buttons, polls). Only `pull` sets `loading`, which drives the
+  // RefreshControl spinner; setting it from a button pushes the whole screen down.
+  const inFlight = useRef<Promise<void>>(undefined);
+  const load = useCallback(() => {
+    // Collapse spammed taps/overlapping polls into one request.
+    inFlight.current ??= (async () => {
+      try {
+        const [b, t, y] = await Promise.all([wallet.balance(c), wallet.txs(c), wallet.sync(c)]);
+        setBalance(b);
+        setSync(y);
+        setTxs([...t].sort((a, z) => z.time - a.time));
+        setError(undefined);
+      } catch (e) {
+        setError(String((e as Error).message));
+      } finally {
+        inFlight.current = undefined;
+      }
+    })();
+    return inFlight.current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setup]);
 
-  const load = useCallback(async () => {
+  const pull = useCallback(async () => {
     setLoading(true);
-    await fetchAll();
+    await load();
     setLoading(false);
-  }, [fetchAll]);
+  }, [load]);
 
   useEffect(() => {
     if (!ready) return;
     let t: number | undefined;
     // Poll only while foreground; iOS suspends the app (and oyster) in background.
-    const start = () => { fetchAll(); t ??= setInterval(fetchAll, 10000); };
+    const start = () => { load(); t ??= setInterval(load, 10000); };
     const stop = () => { clearInterval(t); t = undefined; };
     start();
     const sub = AppState.addEventListener('change', s => (s === 'active' ? start() : stop()));
     return () => { stop(); sub.remove(); };
-  }, [ready, fetchAll]);
+  }, [ready, load]);
 
   const saveSetup = async (s: Setup) => {
     await SecureStore.setItemAsync(KEY, JSON.stringify(s));
     setSetup(s);
   };
 
-  return <Ctx.Provider value={{ setup, ready, saveSetup, c, balance, sync, txs, loading, load, error }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ setup, ready, saveSetup, c, balance, sync, txs, loading, load, pull, error }}>{children}</Ctx.Provider>;
 }
 
 // Phases mirror desktop walletStore.ts derivePhase(): headers, filter headers, then blocks.

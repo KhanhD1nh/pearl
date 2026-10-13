@@ -4,7 +4,7 @@ import { C, Icon, TxRow } from '@/components/ui';
 import { useWallet } from '@/lib/wallet';
 
 export default function Activity() {
-  const { txs, loading, load } = useWallet();
+  const { txs, loading, load, pull } = useWallet();
   return (
     <>
       <Stack.Screen options={{ title: 'Hoạt động' }} />
@@ -14,7 +14,7 @@ export default function Activity() {
         contentContainerStyle={{ padding: 16 }}
         data={txs ?? []}
         keyExtractor={(t, i) => t.txid + i}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={C.accent} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={pull} tintColor={C.accent} />}
         ListHeaderComponent={<Text style={{ color: C.label, fontSize: 34, fontWeight: '700', paddingBottom: 16, paddingTop: 8 }}>Hoạt động</Text>}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingTop: 80, gap: 10 }}>
