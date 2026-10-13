@@ -150,21 +150,53 @@ func NewServer(opts *Options, walletLoader *wallet.Loader, listeners []net.Liste
 // Start begins serving HTTP POST and websocket RPC on each of the server's
 // listeners.  It must be called once, after NewServer.
 func (s *Server) Start() {
-	for _, lis := range s.listeners {
-		s.serve(lis)
+	for i := range s.listeners {
+		s.serve(i)
 	}
 }
 
 // serve serves HTTP POST and websocket RPC for the legacy JSON-RPC RPC server.
 // This function does not block on lis.Accept.
-func (s *Server) serve(lis net.Listener) {
+//
+// If the listener dies while the server is still running (iOS reclaims the
+// sockets of an app suspended in the background), listen again on the same
+// address so clients can reconnect after the app resumes.
+func (s *Server) serve(i int) {
 	s.wg.Add(1)
 	go func() {
-		log.Infof("Listening on %s", lis.Addr())
-		err := s.httpServer.Serve(lis)
-		log.Tracef("Finished serving RPC: %v", err)
-		s.wg.Done()
+		defer s.wg.Done()
+		lis := s.listeners[i]
+		for lis != nil {
+			log.Infof("Listening on %s", lis.Addr())
+			err := s.httpServer.Serve(lis)
+			log.Tracef("Finished serving RPC: %v", err)
+			lis = s.relisten(i, lis.Addr())
+		}
 	}()
+}
+
+// relisten replaces listener i after it died. Returns nil once Stop has begun.
+// Holding quitMtx makes the swap atomic with Stop closing s.listeners.
+func (s *Server) relisten(i int, addr net.Addr) net.Listener {
+	for {
+		s.quitMtx.Lock()
+		select {
+		case <-s.quit:
+			s.quitMtx.Unlock()
+			return nil
+		default:
+		}
+		l, err := net.Listen(addr.Network(), addr.String())
+		if err == nil {
+			s.listeners[i] = l
+		}
+		s.quitMtx.Unlock()
+		if err == nil {
+			return l
+		}
+		log.Warnf("Cannot re-listen on %s: %v", addr, err)
+		time.Sleep(time.Second)
+	}
 }
 
 // RegisterWallet associates the legacy RPC server with the wallet.  This
