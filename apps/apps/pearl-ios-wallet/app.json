@@ -11,7 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "ai.pearlresearch.wallet",
       "config": { "usesNonExemptEncryption": false },
-      "infoPlist": { "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true }, "UIFileSharingEnabled": true, "LSSupportsOpeningDocumentsInPlace": true }
+      "infoPlist": { "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true, "NSExceptionDomains": { "pearlresearch.ai": { "NSIncludesSubdomains": true, "NSExceptionAllowsInsecureHTTPLoads": true } } }, "UIFileSharingEnabled": true, "LSSupportsOpeningDocumentsInPlace": true }
     },
     "plugins": ["expo-secure-store"],
     "web": {

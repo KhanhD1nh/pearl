@@ -43,16 +43,13 @@ export default function App() {
     }
     const t = setInterval(async () => {
       try {
-        Oyster.status();
-        await wallet.balance(conn(setup));
-        setReady(true);
-        clearInterval(t);
+        Oyster.status(); // throws once oyster has exited
       } catch (e) {
-        if (!String((e as Error).message).includes('Network request failed')) {
-          clearInterval(t);
-          Alert.alert('Ví dừng', String((e as Error).message));
-        }
+        clearInterval(t);
+        return Alert.alert('Ví dừng', String((e as Error).message));
       }
+      // RPC server not listening yet: retry. Expo fetch wording varies, so don't match it.
+      await wallet.balance(conn(setup)).then(() => { setReady(true); clearInterval(t); }, () => {});
     }, 1000);
     return () => clearInterval(t);
   }, [setup]);
@@ -231,7 +228,7 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
     ]);
   };
 
-  if (screen === 'send') return <Send c={c} balance={balance} onDone={() => { setScreen('home'); load(); }} />;
+  if (screen === 'send') return <Send c={c} balance={balance} network={network} onDone={() => { setScreen('home'); load(); }} />;
   if (screen === 'settings') return <Settings c={c} network={network} onDone={() => { setScreen('home'); load(); }} />;
   // Phases mirror desktop walletStore.ts derivePhase(): headers, filter headers, then blocks.
   let pct = 0;
@@ -304,51 +301,99 @@ function Wallet({ c, network }: { c: Conn; network: Setup['network'] }) {
   );
 }
 
-function Send({ c, balance, onDone }: { c: Conn; balance?: number; onDone: () => void }) {
+type FeeLevel = 'fast' | 'medium' | 'slow';
+// Same as desktop SendTransaction.tsx / blockbook-client.ts.
+const FEE_LEVELS: [FeeLevel, string, string, number][] = [
+  ['fast', '⚡', 'Nhanh', 1], ['medium', '◷', 'Vừa', 10], ['slow', '⏱', 'Chậm', 25],
+];
+const MEMPOOL_MIN_FEE = 0.00001;
+const BLOCKBOOK = { mainnet: 'http://blockbook.pearlresearch.ai', testnet2: 'http://blockbook.testnet.pearlresearch.ai' };
+
+function Send({ c, balance, network, onDone }: { c: Conn; balance?: number; network: Setup['network']; onDone: () => void }) {
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
-  const [fee, setFee] = useState('0.0001');
+  const [level, setLevel] = useState<FeeLevel>('fast');
+  const [fees, setFees] = useState<Record<FeeLevel, number>>({ fast: 0.0001, medium: 0.00005, slow: 0.00001 });
   const [pass, setPass] = useState('');
   const [busy, setBusy] = useState(false);
+  const fee = fees[level];
+  const spendable = Math.max(0, (balance ?? 0) - fee);
+
+  useEffect(() => {
+    Promise.all(FEE_LEVELS.map(([, , , n]) =>
+      fetch(`${BLOCKBOOK[network]}/api/v1/estimatefee/${n}`).then(r => r.json()).then(d => Math.max(Number(d.result) || 0, MEMPOOL_MIN_FEE)),
+    )).then(([fast, medium, slow]) => setFees({ fast, medium, slow })).catch(() => {});
+  }, [network]);
 
   const submit = async () => {
     const amt = Number(amount);
-    const feeKb = Number(fee);
-    if (!(amt > 0) || !(feeKb > 0)) return Alert.alert('Số tiền / phí không hợp lệ');
+    if (!(amt > 0) || amt > spendable) return Alert.alert('Số tiền không hợp lệ');
     setBusy(true);
     try {
       if (!(await wallet.validate(c, to.trim()))) throw new Error('Địa chỉ không hợp lệ');
       await wallet.unlock(c, pass);
       try {
-        const txid = await wallet.send(c, to.trim(), amt, feeKb);
-        Alert.alert('Đã gửi', txid);
+        const txid = await wallet.send(c, to.trim(), amt, fee);
+        Alert.alert('Đã phát giao dịch', txid);
         onDone();
       } finally {
         await wallet.lock(c).catch(() => {});
       }
     } catch (e) {
-      Alert.alert('Gửi thất bại', String((e as Error).message));
+      const m = String((e as Error).message);
+      Alert.alert('Gửi thất bại', m.includes('not relayed')
+        ? 'Không peer nào nhận giao dịch. Chưa gửi gì, tiền vẫn còn. Kiểm tra kết nối rồi thử lại.'
+        : m.includes('mempool min fee not met') ? 'Phí quá thấp. Thử giao dịch nhỏ hơn.' : m);
     } finally {
       setBusy(false);
     }
   };
 
   const confirm = () =>
-    Alert.alert('Xác nhận', `Gửi ${amount} PRL tới\n${to}?`, [
+    Alert.alert('Xác nhận', `Gửi ${amount} PRL tới\n${to}\nPhí ${fee} PRL/kB`, [
       { text: 'Hủy', style: 'cancel' },
       { text: 'Gửi', style: 'destructive', onPress: submit },
     ]);
 
   return (
     <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
-      <Header title="Gửi PRL" onBack={onDone} />
+      <Header title="Gửi Pearl" onBack={onDone} />
       <View style={s.card}>
-        <Field label="Địa chỉ nhận" placeholder="prl1…" value={to} onChangeText={setTo} />
-        <Field label={`Số tiền (khả dụng ${balance?.toFixed(8) ?? '—'} PRL)`} placeholder="0.00" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
-        <Field label="Phí (PRL/kB)" keyboardType="decimal-pad" value={fee} onChangeText={setFee} />
-        <Field label="Passphrase" placeholder="••••••••" secureTextEntry value={pass} onChangeText={setPass} />
+        <View style={s.kv}><Text style={s.muted}>Từ ví:</Text><Text style={s.txTitle}>default</Text></View>
+        <View style={s.kv}><Text style={s.muted}>Số dư:</Text><Text style={s.txTitle}>{balance?.toFixed(8) ?? '—'} PRL</Text></View>
       </View>
-      <Btn title="Tiếp tục" onPress={confirm} busy={busy} disabled={!to || !amount || !pass} />
+
+      <View style={{ gap: 6 }}>
+        <Field label="Số tiền" placeholder="0.00" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
+        <Text style={s.muted}>Khả dụng: {spendable.toFixed(8)} PRL (đã trừ {fee} PRL/kB phí)</Text>
+        <View style={s.pctRow}>
+          {[25, 50, 75, 100].map(p => (
+            <Pressable key={p} style={s.pct} onPress={() => setAmount(String(Number((spendable * p / 100).toFixed(8))))}>
+              <Text style={s.segText}>{p === 100 ? 'MAX' : `${p}%`}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <Field label="Địa chỉ nhận" placeholder="prl1…" value={to} onChangeText={setTo} />
+
+      <View style={{ gap: 6 }}>
+        <Text style={s.label}>Phí giao dịch</Text>
+        <View style={s.card}>
+          <View style={s.pctRow}>
+            {FEE_LEVELS.map(([k, icon, name, n]) => (
+              <Pressable key={k} style={[s.fee, level === k && s.feeActive]} onPress={() => setLevel(k)}>
+                <Text style={[s.feeName, level === k && { color: C.primary }]}>{icon} {name}</Text>
+                <Text style={s.muted}>~{n} block</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={s.kv}><Text style={s.muted}>Phí / kB:</Text><Text style={s.txTitle}>{fee} PRL</Text></View>
+        </View>
+      </View>
+
+      <Field label="Passphrase" placeholder="••••••••" secureTextEntry value={pass} onChangeText={setPass} />
+      <Btn title="↗ Gửi giao dịch" onPress={confirm} busy={busy} disabled={!to || !amount || !pass} />
     </ScrollView>
   );
 }
@@ -442,4 +487,10 @@ const s = StyleSheet.create({
   txIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   txTitle: { color: C.fg, fontSize: 15, fontWeight: '600' },
   txAmt: { fontSize: 15, fontWeight: '700' },
+  kv: { flexDirection: 'row', justifyContent: 'space-between' },
+  pctRow: { flexDirection: 'row', gap: 8 },
+  pct: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  fee: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingVertical: 12, alignItems: 'center', gap: 4 },
+  feeActive: { borderColor: C.primary, backgroundColor: '#3d4a2a' },
+  feeName: { color: C.muted, fontWeight: '700' },
 });
