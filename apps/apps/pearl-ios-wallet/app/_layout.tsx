@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Text, useColorScheme, View } from 'react-native';
 import { Button, C, Logo } from '@/components/ui';
+import * as Passphrase from '@/lib/passphrase';
 import { authenticate, PrefsProvider, usePrefs } from '@/lib/prefs';
 import { useWallet, WalletProvider } from '@/lib/wallet';
 
@@ -28,8 +29,10 @@ function Splash({ children }: { children?: React.ReactNode }) {
 // Face ID gate on launch and after the app has been in background. Wallet keeps syncing underneath.
 // The Face ID sheet itself flips the app inactive→active, so only prompt while still locked,
 // otherwise every successful scan triggers the next prompt.
-function useLocked() {
+function useLocked(hasWallet: boolean) {
   const { prefs } = usePrefs();
+  // Prefs live in the Keychain and survive reinstall; no wallet yet means nothing to protect.
+  const on = hasWallet && !!prefs?.faceId;
   const [locked, setLocked] = useState(true);
   const lockedRef = useRef(true);
   const prompting = useRef(false);
@@ -45,7 +48,7 @@ function useLocked() {
   };
   useEffect(() => {
     if (!prefs) return; // still loading: stay locked
-    if (!prefs.faceId) return lock(false);
+    if (!on) return lock(false);
     unlock();
     // Auto-prompt once per return from background; after a cancel the user taps "Mở khóa".
     let fromBackground = false;
@@ -55,13 +58,19 @@ function useLocked() {
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefs]);
-  return { locked: !prefs || (prefs.faceId && locked), unlock };
+  }, [prefs, on]);
+  return { locked: hasWallet && (!prefs || (on && locked)), unlock };
 }
 
 function Gate() {
   const { setup, ready } = useWallet();
-  const { locked, unlock } = useLocked();
+  const { prefs, set } = usePrefs();
+  // No wallet (fresh install, or Keychain left over from a deleted app): Face ID starts off.
+  useEffect(() => {
+    if (setup === null && prefs?.faceId) { set({ faceId: false }); Passphrase.forget(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setup, prefs?.faceId]);
+  const { locked, unlock } = useLocked(!!setup && ready);
   const header = headerFor(useColorScheme() === 'dark');
   if (setup === undefined || (setup && !ready)) {
     return (
