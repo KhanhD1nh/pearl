@@ -118,12 +118,24 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     let t: number | undefined;
+    let fast: number | undefined;
+    // Progress-only poll every 1.5s while syncing (getsyncprogress just reads heights);
+    // the heavier balance/tx load stays at 10s.
+    const tick = () => wallet.sync(c).then(y => {
+      setSync(y);
+      if (y.synced) { clearInterval(fast); fast = undefined; }
+    }, () => {});
     // Poll only while foreground; iOS suspends the app (and oyster) in background.
-    const start = () => { load(); t ??= setInterval(load, 10000); };
-    const stop = () => { clearInterval(t); t = undefined; };
+    const start = () => {
+      load();
+      t ??= setInterval(load, 10000);
+      fast ??= setInterval(tick, 1500);
+    };
+    const stop = () => { clearInterval(t); clearInterval(fast); t = fast = undefined; };
     start();
     const sub = AppState.addEventListener('change', s => (s === 'active' ? start() : stop()));
     return () => { stop(); sub.remove(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, load]);
 
   const saveSetup = async (s: Setup) => {

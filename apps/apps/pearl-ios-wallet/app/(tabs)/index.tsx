@@ -1,7 +1,20 @@
 import { router, Stack } from 'expo-router';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { C, CircleAction, fmt, Icon, Logo, Row, Section, TxRow } from '@/components/ui';
 import { syncStatus, useWallet } from '@/lib/wallet';
+
+// Glides between polled values instead of jumping each tick.
+function ProgressBar({ pct }: { pct: number }) {
+  const v = useRef(new Animated.Value(pct)).current;
+  useEffect(() => { Animated.timing(v, { toValue: pct, duration: 1400, useNativeDriver: false }).start(); }, [pct, v]);
+  const width = v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  return (
+    <View style={{ height: 4, borderRadius: 2, backgroundColor: C.elevated, overflow: 'hidden' }}>
+      <Animated.View style={{ height: 4, width, backgroundColor: C.orange }} />
+    </View>
+  );
+}
 
 export default function Home() {
   const { balance, sync, peerHeight, txs, loading, load, pull, setup, error } = useWallet();
@@ -51,13 +64,11 @@ export default function Home() {
           icon={st.synced ? 'checkmark.circle.fill' : 'arrow.triangle.2.circlepath'}
           iconBg={st.synced ? C.green : C.orange}
           title={st.synced ? 'Đã đồng bộ' : 'Đang đồng bộ'}
-          value={st.synced ? (sync?.connections ?? 0) + ' peer' : Math.round(st.pct * 100) + '%'}
+          value={st.synced ? (sync?.connections ?? 0) + ' peer' : (st.pct * 100).toFixed(1) + '%'}
         />
         {!st.synced && (
           <View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 8 }}>
-            <View style={{ height: 4, borderRadius: 2, backgroundColor: C.elevated, overflow: 'hidden' }}>
-              <View style={{ height: 4, width: `${st.pct * 100}%`, backgroundColor: C.orange }} />
-            </View>
+            <ProgressBar pct={st.pct} />
             <Text style={{ color: C.secondary, fontSize: 13, fontVariant: ['tabular-nums'] }}>{st.label}</Text>
           </View>
         )}
