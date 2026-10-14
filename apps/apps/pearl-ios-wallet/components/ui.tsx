@@ -1,22 +1,29 @@
 import * as Haptics from 'expo-haptics';
 import { SymbolView, SymbolViewProps } from 'expo-symbols';
 import { Children, ReactNode } from 'react';
-import { ActivityIndicator, Image, Pressable, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, ColorValue, DynamicColorIOS, Image, PlatformColor, Pressable, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 
-// iOS dark grouped palette + Pearl accent (desktop index.css --primary).
+// iOS semantic colors follow the app's appearance (Appearance.setColorScheme in lib/theme.ts),
+// so no re-render is needed when the user switches dark/system. Accent = desktop --primary,
+// darkened in light mode for contrast on white.
+const dyn = (light: string, dark: string) => DynamicColorIOS({ light, dark });
 export const C = {
-  bg: '#000000',
-  group: '#1c1c1e',
-  elevated: '#2c2c2e',
-  separator: '#38383a',
-  label: '#ffffff',
-  secondary: '#98989f',
-  tertiary: '#5a5a5f',
-  accent: '#cfe98a',
-  onAccent: '#0b0d08',
-  red: '#ff453a',
-  green: '#30d158',
-  orange: '#ff9f0a',
+  bg: PlatformColor('systemGroupedBackground'),
+  group: PlatformColor('secondarySystemGroupedBackground'),
+  elevated: PlatformColor('tertiarySystemFill'),
+  separator: PlatformColor('separator'),
+  label: PlatformColor('label'),
+  secondary: PlatformColor('secondaryLabel'),
+  tertiary: PlatformColor('tertiaryLabel'),
+  accent: dyn('#5b7a12', '#cfe98a'),
+  accentTint: dyn('rgba(91,122,18,0.12)', 'rgba(207,233,138,0.15)'),
+  onAccent: dyn('#ffffff', '#0b0d08'),
+  red: PlatformColor('systemRed'),
+  green: PlatformColor('systemGreen'),
+  greenTint: dyn('rgba(52,199,89,0.15)', 'rgba(48,209,88,0.15)'),
+  orange: PlatformColor('systemOrange'),
+  blue: PlatformColor('systemBlue'),
+  indigo: PlatformColor('systemIndigo'),
 };
 
 export const haptic = {
@@ -32,7 +39,7 @@ export function Logo({ size = 64 }: { size?: number }) {
   return <Image source={require('@/assets/icon.png')} style={{ width: size, height: size, borderRadius: size * 0.2237 }} />;
 }
 
-export function Icon({ name, size = 20, color = C.accent, weight }: { name: SymbolViewProps['name']; size?: number; color?: string; weight?: SymbolViewProps['weight'] }) {
+export function Icon({ name, size = 20, color = C.accent, weight }: { name: SymbolViewProps['name']; size?: number; color?: ColorValue; weight?: SymbolViewProps['weight'] }) {
   return <SymbolView name={name} size={size} tintColor={color} weight={weight} />;
 }
 
@@ -56,7 +63,7 @@ export function Section({ header, footer, children }: { header?: string; footer?
 }
 
 export function Row({ icon, iconBg, title, value, onPress, chevron, destructive, children }: {
-  icon?: SymbolViewProps['name']; iconBg?: string; title: string; value?: ReactNode; onPress?: () => void;
+  icon?: SymbolViewProps['name']; iconBg?: ColorValue; title: string; value?: ReactNode; onPress?: () => void;
   chevron?: boolean; destructive?: boolean; children?: ReactNode;
 }) {
   return (
@@ -95,7 +102,7 @@ export function Button({ title, onPress, kind = 'filled', icon, disabled, busy, 
   title: string; onPress: () => void; kind?: 'filled' | 'tinted' | 'plain'; icon?: SymbolViewProps['name'];
   disabled?: boolean; busy?: boolean; style?: ViewStyle;
 }) {
-  const bg = kind === 'filled' ? C.accent : kind === 'tinted' ? 'rgba(207,233,138,0.15)' : 'transparent';
+  const bg = kind === 'filled' ? C.accent : kind === 'tinted' ? C.accentTint : 'transparent';
   const fg = kind === 'filled' ? C.onAccent : C.accent;
   return (
     <Pressable
@@ -149,7 +156,7 @@ export function TxRow({ amount, time, confirmations, onPress }: { amount: number
   const inc = amount >= 0;
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: pressed ? C.elevated : 'transparent' })}>
-      <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: inc ? 'rgba(48,209,88,0.15)' : C.elevated }}>
+      <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: inc ? C.greenTint : C.elevated }}>
         <Icon name={inc ? 'arrow.down' : 'arrow.up'} size={16} color={inc ? C.green : C.label} weight="bold" />
       </View>
       <View style={{ flex: 1, gap: 2 }}>

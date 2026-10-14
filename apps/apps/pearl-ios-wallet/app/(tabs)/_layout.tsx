@@ -3,7 +3,7 @@ import { C } from '@/components/ui';
 
 export default function Tabs() {
   return (
-    <NativeTabs tintColor={C.accent} blurEffect="systemChromeMaterialDark" minimizeBehavior="onScrollDown">
+    <NativeTabs tintColor={C.accent} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Ví</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'wallet.bifold', selected: 'wallet.bifold.fill' }} md="account_balance_wallet" />

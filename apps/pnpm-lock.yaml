@@ -308,6 +308,9 @@ importers:
       expo-linking:
         specifier: ~57.0.12
         version: 57.0.12(expo@57.0.28)(react-native@0.86.3)(react@19.2.3)
+      expo-local-authentication:
+        specifier: ~57.0.3
+        version: 57.0.3(expo@57.0.28)
       expo-router:
         specifier: ~57.0.26
         version: 57.0.26(@babel/core@7.28.5)(@expo/log-box@57.0.4)(@expo/metro-runtime@57.0.16)(@types/react@18.3.27)(expo-constants@57.0.21)(expo-font@57.0.4)(expo-linking@57.0.12)(expo@57.0.28)(react-dom@19.2.3)(react-native-gesture-handler@3.3.0)(react-native-reanimated@4.7.1)(react-native-safe-area-context@5.7.0)(react-native-screens@4.26.2)(react-native-worklets@0.13.0)(react-native@0.86.3)(react@19.2.3)
@@ -3724,7 +3727,7 @@ packages:
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.7.3
+      semver: 7.8.5
     dev: true
 
   /@npmcli/move-file@2.0.1:
@@ -8721,6 +8724,15 @@ packages:
       - supports-color
     dev: false
 
+  /expo-local-authentication@57.0.3(expo@57.0.28):
+    resolution: {integrity: sha512-1oQCBKz8JOpai+Zp+Z2RkBFIi2CHHWLSJk/pjvT9VEyf8nPFslo4kt1ZlQvtJ4rupbKNCmxqKfYr8Mlo8nJEug==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 57.0.28(@babel/core@7.28.5)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.16)(expo-router@57.0.26)(react-dom@19.2.3)(react-native-worklets@0.13.0)(react-native@0.86.3)(react@19.2.3)(typescript@6.0.3)
+      invariant: 2.2.4
+    dev: false
+
   /expo-modules-autolinking@57.0.15(typescript@6.0.3):
     resolution: {integrity: sha512-TY7Sy7MaIBFNMTTsmNtrkdyFwG3abE4gU2WJ6B4Qh9zXOMhtghHvVYTPh9bujHOY/2bscj8dOTqXnZ8iTVtwmg==}
     hasBin: true
@@ -12672,7 +12684,7 @@ packages:
       react-native: 0.86.3(@babel/core@7.28.5)(@react-native/metro-config@0.87.1)(@types/react@18.3.27)(react@19.2.3)
       react-native-is-edge-to-edge: 1.3.1(react-native@0.86.3)(react@19.2.3)
       react-native-worklets: 0.13.0(@babel/core@7.28.5)(@react-native/metro-config@0.87.1)(react-native@0.86.3)(react@19.2.3)
-      semver: 7.7.3
+      semver: 7.8.5
     dev: false
 
   /react-native-safe-area-context@5.7.0(react-native@0.86.3)(react@19.2.3):
@@ -13350,7 +13362,6 @@ packages:
     resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
     engines: {node: '>=10'}
     hasBin: true
-    dev: false
 
   /send@0.19.2:
     resolution: {integrity: sha512-VMbMxbDeehAxpOtWJXlcUS5E8iXh6QmN+BkRX1GARS3wRaXEEgzCcB10gTQazO42tpNIya8xIyNx8fll1OFPrg==}
@@ -13479,7 +13490,7 @@ packages:
     dependencies:
       '@img/colour': 1.0.0
       detect-libc: 2.1.2
-      semver: 7.7.3
+      semver: 7.8.5
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5
@@ -15214,7 +15225,7 @@ packages:
       make-fetch-happen: 10.2.1
       nopt: 6.0.0
       proc-log: 2.0.1
-      semver: 7.7.3
+      semver: 7.8.5
       tar: 6.2.1
       which: 2.0.2
     transitivePeerDependencies:

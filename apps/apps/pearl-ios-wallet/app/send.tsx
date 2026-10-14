@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, C, fmt, haptic, Icon, Input, Section } from '@/components/ui';
 import * as Passphrase from '@/lib/passphrase';
+import { usePrefs } from '@/lib/prefs';
 import { useWallet } from '@/lib/wallet';
 import { wallet, RpcError } from '@/rpc';
 
@@ -16,14 +17,15 @@ const BLOCKBOOK = { mainnet: 'http://blockbook.pearlresearch.ai', testnet2: 'htt
 
 export default function Send() {
   const { c, balance, setup, load } = useWallet();
+  const { prefs, set } = usePrefs();
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
   const [level, setLevel] = useState<FeeLevel>('fast');
   const [fees, setFees] = useState<Record<FeeLevel, number>>({ fast: 0.0001, medium: 0.00005, slow: 0.00001 });
   const [pass, setPass] = useState('');
-  const [saved, setSaved] = useState<boolean>();
   const [busy, setBusy] = useState(false);
-  useEffect(() => { Passphrase.hasSaved().then(setSaved); }, []);
+  const saved = prefs?.faceIdSend; // toggled in Settings
+  const setSaved = (v: boolean) => set({ faceIdSend: v });
   const fee = fees[level];
   const spendable = Math.max(0, (balance ?? 0) - fee);
   const amt = Number(amount.replace(',', '.'));
@@ -49,12 +51,12 @@ export default function Send() {
       try {
         await wallet.unlock(c, p);
       } catch (e) {
-        if (saved) { await Passphrase.forget(); setSaved(false); } // changed elsewhere: stop reusing it
+        if (saved) { await Passphrase.forget(); await setSaved(false); } // changed elsewhere: stop reusing it
         throw e;
       }
       try {
         const txid = await wallet.send(c, to.trim(), amt, fee);
-        if (!saved) await Passphrase.save(p).catch(() => {});
+        // Passphrase is stored only when "Gửi bằng Face ID" is turned on in Settings.
         haptic.success();
         load();
         router.back();
@@ -141,14 +143,14 @@ export default function Send() {
         </View>
       </Section>
 
-      {saved === false && (
-        <Section header="Xác thực" footer={Passphrase.biometricAvailable() ? 'Chỉ nhập lần đầu. Sau đó gửi bằng Face ID.' : undefined}>
+      {prefs && !saved && (
+        <Section header="Xác thực" footer="Bật “Gửi bằng Face ID” trong Cài đặt để khỏi nhập.">
           <Input placeholder="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
         </Section>
       )}
 
       <Button icon={saved ? 'faceid' : 'paperplane.fill'} title="Gửi" onPress={confirm} busy={busy}
-        disabled={saved === undefined || !to || !(amt > 0) || tooMuch || (!saved && !pass)} />
+        disabled={!prefs || !to || !(amt > 0) || tooMuch || (!saved && !pass)} />
     </ScrollView>
   );
 }

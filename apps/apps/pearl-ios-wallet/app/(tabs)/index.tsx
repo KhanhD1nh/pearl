@@ -4,8 +4,8 @@ import { C, CircleAction, fmt, Icon, Logo, Row, Section, TxRow } from '@/compone
 import { syncStatus, useWallet } from '@/lib/wallet';
 
 export default function Home() {
-  const { balance, sync, txs, loading, load, pull, setup, error } = useWallet();
-  const st = syncStatus(sync);
+  const { balance, sync, peerHeight, txs, loading, load, pull, setup, error } = useWallet();
+  const st = syncStatus(sync, peerHeight);
   const recent = txs?.slice(0, 5);
 
   return (
@@ -34,10 +34,9 @@ export default function Home() {
         <Text style={{ color: C.accent, fontSize: 17, fontWeight: '600' }}>PRL</Text>
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 48 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 64 }}>
         <CircleAction icon="arrow.up" label="Gửi" onPress={() => router.push('/send')} />
         <CircleAction icon="arrow.down" label="Nhận" onPress={() => router.push('/receive')} />
-        <CircleAction icon="arrow.clockwise" label="Làm mới" onPress={load} />
       </View>
 
       {error && (

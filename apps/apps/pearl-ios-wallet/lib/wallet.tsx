@@ -8,6 +8,7 @@ import { Conn, Sync, Tx, wallet } from '@/rpc';
 export type Network = 'mainnet' | 'testnet2';
 export type Setup = { network: Network; user: string; pass: string };
 const KEY = 'pearl-setup';
+const PEER_KEY = 'pearl-peer-height';
 const PORT = 8335;
 
 export const oysterArgs = (s: Setup) => [
@@ -24,6 +25,7 @@ type State = {
   c: Conn;
   balance?: number;
   sync?: Sync;
+  peerHeight: number; // highest chain tip seen, persisted across launches
   txs?: Tx[]; // undefined until first load
   loading: boolean;
   load: () => Promise<void>; // silent refresh
@@ -42,9 +44,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [txs, setTxs] = useState<Tx[]>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [peerHeight, setPeerHeight] = useState(0);
   const c: Conn = { url: `http://127.0.0.1:${PORT}`, user: setup?.user ?? '', pass: setup?.pass ?? '' };
 
   useEffect(() => {
+    SecureStore.getItemAsync(PEER_KEY).then(v => setPeerHeight(Number(v) || 0));
     // Keychain survives app deletion but Documents (wallet.db) does not: drop stale setup.
     SecureStore.getItemAsync(KEY).then(async v => {
       const st: Setup | null = v ? JSON.parse(v) : null;
@@ -91,6 +95,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setSync(y);
         setTxs([...t].sort((a, z) => z.time - a.time));
         setError(undefined);
+        if (y.best_peer_height > peerHeight) {
+          setPeerHeight(y.best_peer_height);
+          SecureStore.setItemAsync(PEER_KEY, String(y.best_peer_height)).catch(() => {});
+        }
       } catch (e) {
         setError(String((e as Error).message));
       } finally {
@@ -99,7 +107,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     })();
     return inFlight.current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setup]);
+  }, [setup, peerHeight]);
 
   const pull = useCallback(async () => {
     setLoading(true);
@@ -123,20 +131,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setSetup(s);
   };
 
-  return <Ctx.Provider value={{ setup, ready, saveSetup, c, balance, sync, txs, loading, load, pull, error }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ setup, ready, saveSetup, c, balance, sync, peerHeight, txs, loading, load, pull, error }}>{children}</Ctx.Provider>;
 }
 
 // Phases mirror desktop walletStore.ts derivePhase(): headers, filter headers, then blocks.
-export function syncStatus(sync?: Sync): { pct: number; label: string; synced: boolean } {
+// lastPeerHeight: chain tip seen in an earlier session, so progress shows before any peer connects.
+export function syncStatus(sync: Sync | undefined, lastPeerHeight: number): { pct: number; label: string; synced: boolean } {
   if (!sync) return { pct: 0, label: 'Đang kết nối…', synced: false };
   if (sync.synced) return { pct: 1, label: 'Đã đồng bộ', synced: true };
-  if (sync.best_peer_height <= 0) return { pct: 0, label: `Đang tìm peer · ${sync.connections} kết nối`, synced: false };
-  const [label, h] = sync.header_height < sync.best_peer_height ? ['Tải header', sync.header_height]
+  const tip = Math.max(sync.best_peer_height, lastPeerHeight);
+  if (tip <= 0) return { pct: 0, label: `Đang tìm peer · ${sync.connections} kết nối`, synced: false };
+  const [label, h] = sync.header_height < tip ? ['Tải header', sync.header_height]
     : sync.filter_header_height < sync.header_height ? ['Tải filter', sync.filter_header_height]
     : ['Quét block', sync.block_height];
+  const waiting = sync.best_peer_height <= 0 ? ` · đang tìm peer` : '';
   return {
-    pct: Math.min(1, h / sync.best_peer_height),
-    label: `${label} ${h.toLocaleString()} / ${sync.best_peer_height.toLocaleString()}`,
+    pct: Math.min(1, h / tip),
+    label: `${label} ${h.toLocaleString()} / ${tip.toLocaleString()}${waiting}`,
     synced: false,
   };
 }

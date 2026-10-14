@@ -1,24 +1,68 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Text, View } from 'react-native';
-import { C, Logo } from '@/components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, Text, View } from 'react-native';
+import { Button, C, Logo } from '@/components/ui';
+import { authenticate, PrefsProvider, usePrefs } from '@/lib/prefs';
 import { useWallet, WalletProvider } from '@/lib/wallet';
 
-const dark = { headerStyle: { backgroundColor: C.bg }, headerTintColor: C.accent, headerTitleStyle: { color: C.label }, contentStyle: { backgroundColor: C.bg } };
+const header = { headerStyle: { backgroundColor: C.bg }, headerTintColor: C.accent, headerTitleStyle: { color: C.label }, contentStyle: { backgroundColor: C.bg } };
+
+function Splash({ children }: { children?: React.ReactNode }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 20, padding: 32 }}>
+      <Logo size={88} />
+      {children}
+    </View>
+  );
+}
+
+// Face ID gate on launch and after the app has been in background. Wallet keeps syncing underneath.
+function useLocked() {
+  const { prefs } = usePrefs();
+  const [locked, setLocked] = useState(true);
+  const prompting = useRef(false);
+  const unlock = async () => {
+    if (prompting.current) return;
+    prompting.current = true;
+    if (await authenticate('Mở khóa Pearl Wallet')) setLocked(false);
+    prompting.current = false;
+  };
+  useEffect(() => {
+    if (!prefs?.faceIdLogin) return setLocked(false);
+    unlock();
+    // 'background' only: the Face ID sheet itself makes the app 'inactive'.
+    const sub = AppState.addEventListener('change', s => {
+      if (s === 'background') setLocked(true);
+      else if (s === 'active') unlock();
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefs?.faceIdLogin]);
+  return { locked: !prefs || (prefs.faceIdLogin && locked), unlock };
+}
 
 function Gate() {
   const { setup, ready } = useWallet();
+  const { locked, unlock } = useLocked();
   if (setup === undefined || (setup && !ready)) {
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-        <Logo size={88} />
+      <Splash>
         <ActivityIndicator color={C.accent} />
         {setup && <Text style={{ color: C.secondary, fontSize: 15 }}>Đang khởi động ví…</Text>}
-      </View>
+      </Splash>
+    );
+  }
+  if (setup && locked) {
+    return (
+      <Splash>
+        <Text style={{ color: C.secondary, fontSize: 15 }}>Pearl Wallet đã khóa</Text>
+        <Button icon="faceid" title="Mở khóa" onPress={unlock} style={{ alignSelf: 'stretch' }} />
+      </Splash>
     );
   }
   return (
-    <Stack screenOptions={dark}>
+    <Stack screenOptions={header}>
       <Stack.Protected guard={!setup}>
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       </Stack.Protected>
@@ -34,9 +78,11 @@ function Gate() {
 
 export default function Root() {
   return (
-    <WalletProvider>
-      <StatusBar style="light" />
-      <Gate />
-    </WalletProvider>
+    <PrefsProvider>
+      <WalletProvider>
+        <StatusBar style="auto" />
+        <Gate />
+      </WalletProvider>
+    </PrefsProvider>
   );
 }
