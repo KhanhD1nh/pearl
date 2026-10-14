@@ -2,19 +2,17 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Appearance } from 'react-native';
-import * as Passphrase from '@/lib/passphrase';
 
 // User settings, kept in the Keychain (no auth) next to the wallet setup.
-export type Theme = 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'system';
 export type Prefs = {
   theme: Theme;
   faceIdLogin: boolean; // Face ID gate on launch and when returning from background
-  faceIdSend: boolean; // send with the Face ID-protected passphrase (lib/passphrase.ts)
 };
 const KEY = 'pearl-prefs';
-const DEFAULTS: Prefs = { theme: 'dark', faceIdLogin: false, faceIdSend: false };
+const DEFAULTS: Prefs = { theme: 'dark', faceIdLogin: false };
 
-const applyTheme = (t: Theme) => Appearance.setColorScheme(t === 'dark' ? 'dark' : 'unspecified');
+const applyTheme = (t: Theme) => Appearance.setColorScheme(t === 'system' ? 'unspecified' : t);
 applyTheme(DEFAULTS.theme);
 
 type Ctx = { prefs?: Prefs; set: (p: Partial<Prefs>) => Promise<void> };
@@ -26,8 +24,6 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     SecureStore.getItemAsync(KEY).then(async v => {
       const p: Prefs = { ...DEFAULTS, ...(v ? JSON.parse(v) : {}) };
-      // Send-with-Face ID needs the saved passphrase; iOS drops it when biometrics change.
-      p.faceIdSend &&= await Passphrase.hasSaved();
       applyTheme(p.theme);
       setPrefs(p);
     });

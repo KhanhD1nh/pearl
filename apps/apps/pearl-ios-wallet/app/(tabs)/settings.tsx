@@ -20,9 +20,8 @@ export default function Settings() {
     try {
       await wallet.changePass(c, cur, next);
       await Passphrase.forget();
-      if (prefs?.faceIdSend) await set({ faceIdSend: false });
       haptic.success();
-      Alert.alert('Đã đổi passphrase', prefs?.faceIdSend ? 'Bật lại "Gửi bằng Face ID" để dùng passphrase mới.' : undefined);
+      Alert.alert('Đã đổi passphrase');
       setCur(''); setNext('');
     } catch (e) {
       haptic.error();
@@ -35,32 +34,6 @@ export default function Settings() {
   const toggleLogin = async (on: boolean) => {
     if (!(await authenticate(on ? 'Bật mở khóa bằng Face ID' : 'Tắt mở khóa bằng Face ID'))) return;
     await set({ faceIdLogin: on });
-  };
-
-  // Turning on asks for the passphrase once, checks it against the wallet, then stores it behind Face ID.
-  const toggleSend = (on: boolean) => {
-    if (!on) {
-      Passphrase.forget().then(() => set({ faceIdSend: false }));
-      return;
-    }
-    Alert.prompt('Gửi bằng Face ID', 'Nhập passphrase ví một lần để lưu vào Keychain, khóa bằng Face ID.', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Bật',
-        onPress: async (p?: string) => {
-          try {
-            await wallet.unlock(c, p ?? '');
-            await wallet.lock(c).catch(() => {});
-            await Passphrase.save(p ?? '');
-            await set({ faceIdSend: true });
-            haptic.success();
-          } catch (e) {
-            haptic.error();
-            Alert.alert('Không bật được', String((e as Error).message).includes('passphrase') ? 'Sai passphrase.' : String((e as Error).message));
-          }
-        },
-      },
-    ], 'secure-text');
   };
 
   return (
@@ -84,18 +57,15 @@ export default function Settings() {
         <View style={{ padding: 12 }}>
           <Segmented<Theme>
             value={prefs?.theme ?? 'dark'}
-            options={[['dark', 'Tối'], ['system', 'Theo hệ thống']]}
+            options={[['light', 'Sáng'], ['dark', 'Tối'], ['system', 'Hệ thống']]}
             onChange={theme => set({ theme })}
           />
         </View>
       </Section>
 
-      <Section header="Bảo mật" footer={bio === false ? 'Máy chưa cài Face ID / Touch ID.' : 'Gửi bằng Face ID lưu passphrase trong Keychain của máy này, chỉ mở được bằng khuôn mặt của bạn.'}>
+      <Section header="Bảo mật" footer={bio === false ? 'Máy chưa cài Face ID / Touch ID.' : 'Khi gửi, app dùng Face ID nếu máy có. Passphrase chỉ cần nhập lần gửi đầu tiên.'}>
         <Row icon="faceid" iconBg={C.green} title="Mở khóa app">
           <Switch value={!!prefs?.faceIdLogin} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
-        </Row>
-        <Row icon="paperplane.fill" iconBg={C.blue} title="Gửi bằng Face ID">
-          <Switch value={!!prefs?.faceIdSend} onValueChange={toggleSend} disabled={!bio} trackColor={{ true: C.green }} />
         </Row>
       </Section>
 

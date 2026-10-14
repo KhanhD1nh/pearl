@@ -1,12 +1,19 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Text, useColorScheme, View } from 'react-native';
 import { Button, C, Logo } from '@/components/ui';
 import { authenticate, PrefsProvider, usePrefs } from '@/lib/prefs';
 import { useWallet, WalletProvider } from '@/lib/wallet';
 
-const header = { headerStyle: { backgroundColor: C.bg }, headerTintColor: C.accent, headerTitleStyle: { color: C.label }, contentStyle: { backgroundColor: C.bg } };
+// Native header props take plain colors only (PlatformColor renders as the light default), so pick hex per scheme.
+const headerFor = (dark: boolean) => ({
+  headerStyle: { backgroundColor: dark ? '#1c1c1e' : '#f2f2f7' },
+  headerTintColor: dark ? '#cfe98a' : '#5b7a12',
+  headerTitleStyle: { color: dark ? '#ffffff' : '#000000' },
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: C.bg },
+});
 
 function Splash({ children }: { children?: React.ReactNode }) {
   return (
@@ -18,23 +25,31 @@ function Splash({ children }: { children?: React.ReactNode }) {
 }
 
 // Face ID gate on launch and after the app has been in background. Wallet keeps syncing underneath.
+// The Face ID sheet itself flips the app inactive→active, so only prompt while still locked,
+// otherwise every successful scan triggers the next prompt.
 function useLocked() {
   const { prefs } = usePrefs();
   const [locked, setLocked] = useState(true);
+  const lockedRef = useRef(true);
   const prompting = useRef(false);
+  const lock = (v: boolean) => { lockedRef.current = v; setLocked(v); };
   const unlock = async () => {
-    if (prompting.current) return;
+    if (prompting.current || !lockedRef.current) return;
     prompting.current = true;
-    if (await authenticate('Mở khóa Pearl Wallet')) setLocked(false);
-    prompting.current = false;
+    try {
+      if (await authenticate('Mở khóa Pearl Wallet')) lock(false);
+    } finally {
+      prompting.current = false;
+    }
   };
   useEffect(() => {
-    if (!prefs?.faceIdLogin) return setLocked(false);
+    if (!prefs?.faceIdLogin) return lock(false);
     unlock();
-    // 'background' only: the Face ID sheet itself makes the app 'inactive'.
+    // Auto-prompt once per return from background; after a cancel the user taps "Mở khóa".
+    let fromBackground = false;
     const sub = AppState.addEventListener('change', s => {
-      if (s === 'background') setLocked(true);
-      else if (s === 'active') unlock();
+      if (s === 'background' && !prompting.current) { lock(true); fromBackground = true; }
+      else if (s === 'active' && fromBackground) { fromBackground = false; unlock(); }
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -45,6 +60,7 @@ function useLocked() {
 function Gate() {
   const { setup, ready } = useWallet();
   const { locked, unlock } = useLocked();
+  const header = headerFor(useColorScheme() === 'dark');
   if (setup === undefined || (setup && !ready)) {
     return (
       <Splash>
