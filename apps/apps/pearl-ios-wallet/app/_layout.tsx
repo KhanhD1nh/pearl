@@ -9,7 +9,8 @@ import { useWallet, WalletProvider } from '@/lib/wallet';
 // Native header props take plain colors only (PlatformColor renders as the light default), so pick hex per scheme.
 const headerFor = (dark: boolean) => ({
   headerStyle: { backgroundColor: dark ? '#1c1c1e' : '#f2f2f7' },
-  headerTintColor: dark ? '#cfe98a' : '#5b7a12',
+  // iOS 26 draws header buttons on glass; the light-green accent is unreadable there, use label color.
+  headerTintColor: dark ? '#ffffff' : '#000000',
   headerTitleStyle: { color: dark ? '#ffffff' : '#000000' },
   headerShadowVisible: false,
   contentStyle: { backgroundColor: C.bg },
