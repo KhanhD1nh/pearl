@@ -32,8 +32,9 @@ export default function Settings() {
   };
 
   const toggleLogin = async (on: boolean) => {
-    if (!(await authenticate(on ? 'Bật mở khóa bằng Face ID' : 'Tắt mở khóa bằng Face ID'))) return;
-    await set({ faceIdLogin: on });
+    if (!(await authenticate(on ? 'Bật Face ID' : 'Tắt Face ID'))) return;
+    await set({ faceId: on });
+    if (!on) await Passphrase.forget();
   };
 
   return (
@@ -63,9 +64,9 @@ export default function Settings() {
         </View>
       </Section>
 
-      <Section header="Bảo mật" footer={bio === false ? 'Máy chưa cài Face ID / Touch ID.' : 'Khi gửi, app dùng Face ID nếu máy có. Passphrase chỉ cần nhập lần gửi đầu tiên.'}>
-        <Row icon="faceid" iconBg={C.green} title="Mở khóa app">
-          <Switch value={!!prefs?.faceIdLogin} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
+      <Section header="Bảo mật" footer={bio === false ? 'Máy chưa cài Face ID / Touch ID.' : undefined}>
+        <Row icon="faceid" iconBg={C.green} title="Face ID">
+          <Switch value={!!prefs?.faceId} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
         </Row>
       </Section>
 

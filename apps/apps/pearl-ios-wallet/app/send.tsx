@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, C, fmt, haptic, Icon, Input, Section } from '@/components/ui';
 import * as Passphrase from '@/lib/passphrase';
+import { usePrefs } from '@/lib/prefs';
 import { useWallet } from '@/lib/wallet';
 import { wallet, RpcError } from '@/rpc';
 
@@ -22,9 +23,11 @@ export default function Send() {
   const [fees, setFees] = useState<Record<FeeLevel, number>>({ fast: 0.0001, medium: 0.00005, slow: 0.00001 });
   const [pass, setPass] = useState('');
   const [busy, setBusy] = useState(false);
-  // Face ID when the device has it and the passphrase was stored by an earlier send; otherwise type it.
-  const [saved, setSaved] = useState<boolean>();
-  useEffect(() => { Passphrase.hasSaved().then(v => setSaved(v && Passphrase.biometricAvailable())); }, []);
+  // Face ID (Settings switch) + passphrase stored by an earlier send: scan instead of typing.
+  const { prefs } = usePrefs();
+  const [stored, setSaved] = useState<boolean>();
+  useEffect(() => { Passphrase.hasSaved().then(setSaved); }, []);
+  const saved = prefs && stored !== undefined ? prefs.faceId && stored : undefined;
   const fee = fees[level];
   const spendable = Math.max(0, (balance ?? 0) - fee);
   const amt = Number(amount.replace(',', '.'));
@@ -55,7 +58,7 @@ export default function Send() {
       }
       try {
         const txid = await wallet.send(c, to.trim(), amt, fee);
-        if (!saved) await Passphrase.save(p).catch(() => {}); // correct passphrase: next sends use Face ID
+        if (!saved && prefs?.faceId) await Passphrase.save(p).catch(() => {}); // correct passphrase: next sends use Face ID
         haptic.success();
         load();
         router.back();
@@ -143,7 +146,7 @@ export default function Send() {
       </Section>
 
       {saved === false && (
-        <Section header="Xác thực" footer={Passphrase.biometricAvailable() ? 'Chỉ nhập lần đầu. Lần sau gửi bằng Face ID.' : undefined}>
+        <Section header="Xác thực" >
           <Input placeholder="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
         </Section>
       )}

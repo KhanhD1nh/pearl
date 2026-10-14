@@ -7,10 +7,10 @@ import { Appearance } from 'react-native';
 export type Theme = 'light' | 'dark' | 'system';
 export type Prefs = {
   theme: Theme;
-  faceIdLogin: boolean; // Face ID gate on launch and when returning from background
+  faceId: boolean; // one switch for every Face ID use: app unlock, send
 };
 const KEY = 'pearl-prefs';
-const DEFAULTS: Prefs = { theme: 'dark', faceIdLogin: false };
+const DEFAULTS: Prefs = { theme: 'dark', faceId: false };
 
 const applyTheme = (t: Theme) => Appearance.setColorScheme(t === 'system' ? 'unspecified' : t);
 applyTheme(DEFAULTS.theme);

@@ -43,7 +43,7 @@ function useLocked() {
     }
   };
   useEffect(() => {
-    if (!prefs?.faceIdLogin) return lock(false);
+    if (!prefs?.faceId) return lock(false);
     unlock();
     // Auto-prompt once per return from background; after a cancel the user taps "Mở khóa".
     let fromBackground = false;
@@ -53,8 +53,8 @@ function useLocked() {
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefs?.faceIdLogin]);
-  return { locked: !prefs || (prefs.faceIdLogin && locked), unlock };
+  }, [prefs?.faceId]);
+  return { locked: !prefs || (prefs.faceId && locked), unlock };
 }
 
 function Gate() {
