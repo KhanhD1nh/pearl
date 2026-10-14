@@ -8,6 +8,7 @@ const N = requireNativeModule<{
   start(args: string): string;
   status(): string;
   rpc(auth: string, body: string): Promise<string>;
+  tail(path: string, bytes: number): string;
 }>('Oyster');
 
 function unwrap<T>(json: string): T {
@@ -26,3 +27,5 @@ export const status = () => unwrap<boolean>(N.status());
 // One JSON-RPC call straight into oyster's handler; returns HTTP status and body text.
 export const rpc = async (auth: string, body: string) =>
   unwrap<{ status: number; body: string }>(await N.rpc(auth, body));
+// oyster.log lives in <logdir>/<network>/ (wallet/config.go). Last ~64 KB.
+export const log = (network: string) => N.tail(`${N.dataDir()}/logs/${network}/oyster.log`, 64 * 1024);

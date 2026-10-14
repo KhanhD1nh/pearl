@@ -1,8 +1,9 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Switch, Text, View } from 'react-native';
-import { Button, C, haptic, Input, Row, Section, Segmented } from '@/components/ui';
+import { Button, C, haptic, Input, Row, Section } from '@/components/ui';
 import * as Passphrase from '@/lib/passphrase';
-import { authenticate, biometricReady, Theme, usePrefs } from '@/lib/prefs';
+import { authenticate, biometricReady, THEME_LABEL, usePrefs } from '@/lib/prefs';
 import { useWallet } from '@/lib/wallet';
 import { wallet } from '@/rpc';
 
@@ -52,19 +53,11 @@ export default function Settings() {
         <Row icon="network" iconBg={C.blue} title="Mạng" value={setup?.network === 'testnet2' ? 'Testnet' : 'Mainnet'} />
         <Row icon="antenna.radiowaves.left.and.right" iconBg={C.green} title="Peer" value={String(sync?.connections ?? 0)} />
         <Row icon="square.stack.3d.up" iconBg={C.indigo} title="Block" value={(sync?.block_height ?? 0).toLocaleString()} />
+        <Row icon="doc.text" iconBg={C.secondary} title="Nhật ký" chevron onPress={() => router.push('/log')} />
       </Section>
 
-      <Section header="Giao diện">
-        <View style={{ padding: 12 }}>
-          <Segmented<Theme>
-            value={prefs?.theme ?? 'dark'}
-            options={[['light', 'Sáng'], ['dark', 'Tối'], ['system', 'Hệ thống']]}
-            onChange={theme => set({ theme })}
-          />
-        </View>
-      </Section>
-
-      <Section header="Bảo mật" footer={bio === false ? 'Máy chưa cài Face ID / Touch ID.' : undefined}>
+      <Section header="Chung">
+        <Row icon="circle.lefthalf.filled" iconBg={C.indigo} title="Giao diện" value={THEME_LABEL[prefs?.theme ?? 'dark']} chevron onPress={() => router.push('/appearance')} />
         <Row icon="faceid" iconBg={C.green} title="Face ID">
           <Switch value={!!prefs?.faceId} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
         </Row>

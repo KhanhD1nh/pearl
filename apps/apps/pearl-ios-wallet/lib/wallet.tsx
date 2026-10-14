@@ -140,11 +140,11 @@ export function syncStatus(sync: Sync | undefined, lastPeerHeight: number): { pc
   if (!sync) return { pct: 0, label: 'Đang kết nối…', synced: false };
   if (sync.synced) return { pct: 1, label: 'Đã đồng bộ', synced: true };
   const tip = Math.max(sync.best_peer_height, lastPeerHeight);
-  if (tip <= 0) return { pct: 0, label: `Đang tìm peer · ${sync.connections} kết nối`, synced: false };
+  if (tip <= 0) return { pct: 0, label: `Đang tìm peer · ${sync.connections} kết nối · header ${sync.header_height.toLocaleString()}`, synced: false };
   const [label, h] = sync.header_height < tip ? ['Tải header', sync.header_height]
     : sync.filter_header_height < sync.header_height ? ['Tải filter', sync.filter_header_height]
     : ['Quét block', sync.block_height];
-  const waiting = sync.best_peer_height <= 0 ? ` · đang tìm peer` : '';
+  const waiting = sync.best_peer_height <= 0 ? ` · đang tìm peer (${sync.connections} kết nối)` : '';
   return {
     pct: Math.min(1, h / tip),
     label: `${label} ${h.toLocaleString()} / ${tip.toLocaleString()}${waiting}`,

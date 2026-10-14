@@ -43,7 +43,8 @@ function useLocked() {
     }
   };
   useEffect(() => {
-    if (!prefs?.faceId) return lock(false);
+    if (!prefs) return; // still loading: stay locked
+    if (!prefs.faceId) return lock(false);
     unlock();
     // Auto-prompt once per return from background; after a cancel the user taps "Mở khóa".
     let fromBackground = false;
@@ -53,7 +54,7 @@ function useLocked() {
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefs?.faceId]);
+  }, [prefs]);
   return { locked: !prefs || (prefs.faceId && locked), unlock };
 }
 
@@ -86,6 +87,8 @@ function Gate() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="send" options={{ presentation: 'formSheet', sheetGrabberVisible: true, sheetAllowedDetents: [1.0], title: 'Gửi Pearl', headerShown: true }} />
         <Stack.Screen name="receive" options={{ presentation: 'formSheet', sheetGrabberVisible: true, sheetAllowedDetents: [0.85, 1.0], title: 'Nhận Pearl', headerShown: true }} />
+        <Stack.Screen name="log" options={{ title: 'Nhật ký', headerBackTitle: 'Cài đặt' }} />
+        <Stack.Screen name="appearance" options={{ title: 'Giao diện', headerBackTitle: 'Cài đặt' }} />
         <Stack.Screen name="tx/[id]" options={{ title: 'Giao dịch', headerBackTitle: 'Quay lại' }} />
       </Stack.Protected>
     </Stack>

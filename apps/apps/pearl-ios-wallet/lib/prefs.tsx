@@ -5,6 +5,7 @@ import { Appearance } from 'react-native';
 
 // User settings, kept in the Keychain (no auth) next to the wallet setup.
 export type Theme = 'light' | 'dark' | 'system';
+export const THEME_LABEL: Record<Theme, string> = { light: 'Sáng', dark: 'Tối', system: 'Hệ thống' };
 export type Prefs = {
   theme: Theme;
   faceId: boolean; // one switch for every Face ID use: app unlock, send

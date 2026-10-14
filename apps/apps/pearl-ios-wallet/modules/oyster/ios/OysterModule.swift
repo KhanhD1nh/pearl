@@ -34,6 +34,15 @@ public class OysterModule: Module {
       call { OysterStatus() }
     }
 
+    // Last `bytes` of a text file (oyster log), for the in-app log screen.
+    Function("tail") { (path: String, bytes: Int) -> String in
+      guard let h = FileHandle(forReadingAtPath: path) else { return "" }
+      defer { try? h.close() }
+      let end = h.seekToEndOfFile()
+      h.seek(toFileOffset: end > UInt64(bytes) ? end - UInt64(bytes) : 0)
+      return String(decoding: h.readDataToEndOfFile(), as: UTF8.self)
+    }
+
     // In-process JSON-RPC (no socket). AsyncFunction runs off the JS thread.
     AsyncFunction("rpc") { (auth: String, body: String) -> String in
       call { auth.withCString { a in body.withCString { b in OysterRPC(UnsafeMutablePointer(mutating: a), UnsafeMutablePointer(mutating: b)) } } }
