@@ -21,6 +21,7 @@ export default function Home() {
   const st = syncStatus(sync, peerHeight);
   const recent = txs?.slice(0, 5);
   const [price, setPrice] = useState<number>();
+  const [priceFailed, setPriceFailed] = useState(false);
 
   useEffect(() => {
     if (setup?.network !== 'mainnet') return;
@@ -31,9 +32,9 @@ export default function Home() {
         if (!response.ok) throw new Error('Market request failed');
         const data = await response.json();
         if (typeof data.price_usd !== 'number' || !Number.isFinite(data.price_usd) || data.price_usd <= 0) throw new Error('Invalid market price');
-        if (active) setPrice(data.price_usd);
+        if (active) { setPrice(data.price_usd); setPriceFailed(false); }
       } catch {
-        if (active) setPrice(undefined);
+        if (active) setPriceFailed(true);
       }
     };
     update();
@@ -70,11 +71,13 @@ export default function Home() {
         </View>
         {setup?.network === 'mainnet' && (
           <Text style={{ color: C.secondary, fontSize: 15, fontVariant: ['tabular-nums'], textAlign: 'center' }}>
-            {price === undefined
-              ? 'Giá PRL không khả dụng'
-              : balance !== undefined
+            {price !== undefined
+              ? (balance !== undefined
                 ? `≈ $${(balance * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · 1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`
-                : `1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`}
+                : `1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`) + (priceFailed ? ' · giá cũ' : '')
+              : priceFailed
+                ? 'Không tải được giá PRL'
+                : 'Đang tải giá…'}
           </Text>
         )}
       </View>

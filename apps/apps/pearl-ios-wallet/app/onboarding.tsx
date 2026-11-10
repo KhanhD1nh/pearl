@@ -13,6 +13,9 @@ export default function Onboarding() {
   const [seed, setSeed] = useState('');
   const [busy, setBusy] = useState(false);
   const importing = mode === 'import';
+  const seedWords = seed.trim() ? seed.trim().split(/\s+/).length : 0;
+  const short = !!pass && pass.length < 8;
+  const mismatch = !!pass2 && pass !== pass2;
 
   const submit = async () => {
     if (pass.length < 8) return Alert.alert('Passphrase quá ngắn', 'Dùng ít nhất 8 ký tự.');
@@ -64,14 +67,14 @@ export default function Onboarding() {
       </View>
 
       {importing && (
-        <Section header="12 từ khôi phục">
-          <Input multiline placeholder="word1 word2 word3 …" value={seed} onChangeText={setSeed} spellCheck={false} autoComplete="off" style={{ minHeight: 110, textAlignVertical: 'top', paddingTop: 13 }} />
+        <Section header="12 từ khôi phục" footer={seedWords ? `${seedWords}/12 từ` : undefined}>
+          <Input multiline editable={!busy} accessibilityLabel="12 từ khôi phục" placeholder="word1 word2 word3 …" value={seed} onChangeText={setSeed} spellCheck={false} autoComplete="off" style={{ minHeight: 110, textAlignVertical: 'top', paddingTop: 13 }} />
         </Section>
       )}
 
-      <Section header="Passphrase">
-        <Input placeholder="Passphrase" secureTextEntry value={pass} onChangeText={setPass} textContentType="newPassword" returnKeyType="next" />
-        <Input placeholder="Nhập lại" secureTextEntry value={pass2} onChangeText={setPass2} textContentType="newPassword" returnKeyType="done" />
+      <Section header="Passphrase" footer={short ? 'Ít nhất 8 ký tự.' : mismatch ? 'Passphrase không khớp.' : undefined}>
+        <Input placeholder="Passphrase" secureTextEntry value={pass} onChangeText={setPass} textContentType="newPassword" returnKeyType="next" editable={!busy} />
+        <Input placeholder="Nhập lại" secureTextEntry value={pass2} onChangeText={setPass2} textContentType="newPassword" returnKeyType="done" editable={!busy} />
       </Section>
 
       <Button title={importing ? 'Khôi phục ví' : 'Tạo ví'} onPress={submit} busy={busy} disabled={!pass || !pass2 || (importing && !seed)} />

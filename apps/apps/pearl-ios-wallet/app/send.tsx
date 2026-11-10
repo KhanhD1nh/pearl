@@ -33,6 +33,11 @@ export default function Send() {
   const spendable = Math.max(0, (balance ?? 0) - fee);
   const amt = Number(amount.replace(',', '.'));
   const tooMuch = amt > spendable;
+  const toTrim = to.trim();
+  // Fixed-point text (never "1e-7"), trailing zeros trimmed.
+  const plain = (n: number) => n.toFixed(8).replace(/\.?0+$/, '');
+  // Digits plus one separator, max 8 decimals (PRL precision).
+  const onAmount = (t: string) => { if (/^\d*[.,]?\d{0,8}$/.test(t)) setAmount(t); };
 
   useEffect(() => {
     const net = setup?.network ?? 'mainnet';
@@ -82,7 +87,7 @@ export default function Send() {
 
   const confirm = () => Alert.alert(
     'Xác nhận gửi',
-    fmt(amt) + ' PRL\ntới ' + to.trim() + '\n\nPhí ' + fee + ' PRL/kB',
+    fmt(amt) + ' PRL\ntới ' + toTrim + '\n\nPhí ' + fee + ' PRL/kB',
     [{ text: 'Hủy', style: 'cancel' }, { text: 'Gửi', style: 'destructive', onPress: submit }],
   );
 
@@ -100,22 +105,25 @@ export default function Send() {
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
           <Input
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={onAmount}
             placeholder="0"
             keyboardType="decimal-pad"
+            accessibilityLabel="Số lượng PRL"
             style={{ fontSize: 52, fontWeight: '700', textAlign: 'center', color: tooMuch ? C.red : C.label, minWidth: 80, paddingHorizontal: 0, fontVariant: ['tabular-nums'] }}
           />
           <Text style={{ color: C.accent, fontSize: 24, fontWeight: '600' }}>PRL</Text>
         </View>
-        <Text style={{ color: tooMuch ? C.red : C.secondary, fontSize: 14 }}>
+        <Text accessibilityLiveRegion="polite" style={{ color: tooMuch ? C.red : C.secondary, fontSize: 14 }}>
           {tooMuch ? 'Vượt số dư khả dụng' : 'Khả dụng ' + fmt(spendable) + ' PRL'}
         </Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           {[25, 50, 75, 100].map(p => (
             <Pressable
               key={p}
-              onPress={() => { haptic.tap(); setAmount(String(Number((spendable * p / 100).toFixed(8)))); }}
-              style={({ pressed }) => ({ backgroundColor: C.group, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7, opacity: pressed ? 0.6 : 1 })}
+              accessibilityRole="button"
+              accessibilityLabel={p === 100 ? 'Gửi tối đa' : 'Gửi ' + p + '% số dư khả dụng'}
+              onPress={() => { haptic.tap(); setAmount(plain(spendable * p / 100)); }}
+              style={({ pressed }) => ({ backgroundColor: C.group, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
             >
               <Text style={{ color: C.label, fontSize: 14, fontWeight: '600' }}>{p === 100 ? 'Tối đa' : p + '%'}</Text>
             </Pressable>
@@ -130,13 +138,15 @@ export default function Send() {
             value={to}
             onChangeText={setTo}
             multiline
+            accessibilityLabel="Địa chỉ người nhận"
             style={{ flex: 1, fontFamily: 'Menlo', fontSize: 15 }}
           />
           <Pressable
             hitSlop={8}
+            accessibilityRole="button"
             accessibilityLabel={to ? 'Xóa địa chỉ' : 'Dán địa chỉ'}
-            onPress={async () => { haptic.tap(); setTo(to ? '' : (await Clipboard.getStringAsync()).trim()); }}
-            style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+            onPress={async () => { haptic.tap(); setTo(to ? '' : (await Clipboard.getStringAsync().catch(() => '')).trim()); }}
+            style={{ paddingHorizontal: 16, paddingVertical: 12, minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
           >
             <Icon name={to ? 'xmark.circle.fill' : 'doc.on.clipboard'} size={20} color={to ? C.tertiary : C.accent} />
           </Pressable>
@@ -150,6 +160,9 @@ export default function Send() {
             return (
               <Pressable
                 key={k}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={name + ', ' + fees[k] + ' PRL mỗi kB'}
                 onPress={() => { haptic.tap(); setLevel(k); }}
                 style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: 12, borderRadius: 10, borderCurve: 'continuous', backgroundColor: on ? 'rgba(207,233,138,0.15)' : 'transparent', borderWidth: 1, borderColor: on ? C.accent : 'transparent' }}
               >
@@ -164,12 +177,12 @@ export default function Send() {
 
       {saved === false && (
         <Section header="Passphrase">
-          <Input placeholder="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
+          <Input placeholder="Passphrase ví" accessibilityLabel="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
         </Section>
       )}
 
       <Button icon={saved ? 'faceid' : 'paperplane.fill'} title="Gửi" onPress={confirm} busy={busy}
-        disabled={saved === undefined || !to || !(amt > 0) || tooMuch || (!saved && !pass)} />
+        disabled={saved === undefined || !toTrim || !(amt > 0) || tooMuch || (!saved && !pass)} />
     </ScrollView>
   );
 }

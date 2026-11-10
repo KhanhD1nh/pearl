@@ -37,12 +37,12 @@ export default function Activity() {
             <View style={{ flexDirection: 'row' }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: C.secondary, fontSize: 13 }}>Nhận</Text>
-                <Text adjustsFontSizeToFit numberOfLines={1} style={{ color: C.green, fontSize: 20, fontWeight: '700', fontVariant: ['tabular-nums'] }}>+{fmt(totals.received / 1e8, 4)}</Text>
+                <Text adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={1} style={{ color: C.green, fontSize: 20, fontWeight: '700', fontVariant: ['tabular-nums'] }}>+{fmt(totals.received / 1e8, 8)}</Text>
               </View>
               <View style={{ width: 0.5, backgroundColor: C.separator, marginHorizontal: 12 }} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: C.secondary, fontSize: 13 }}>Gửi</Text>
-                <Text adjustsFontSizeToFit numberOfLines={1} style={{ color: C.label, fontSize: 20, fontWeight: '700', fontVariant: ['tabular-nums'] }}>−{fmt(totals.sent / 1e8, 4)}</Text>
+                <Text adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={1} style={{ color: C.label, fontSize: 20, fontWeight: '700', fontVariant: ['tabular-nums'] }}>−{fmt(totals.sent / 1e8, 8)}</Text>
               </View>
             </View>
             <Text style={{ color: C.secondary, fontSize: 12 }}>PRL · gồm giao dịch chưa xác nhận; số gửi chưa gồm phí.</Text>

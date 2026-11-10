@@ -69,6 +69,7 @@ export function Row({ icon, iconBg, title, value, onPress, chevron, destructive,
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
       disabled={!onPress}
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, minHeight: 48, paddingVertical: 10, backgroundColor: pressed ? C.elevated : 'transparent' })}
     >
@@ -107,9 +108,11 @@ export function Button({ title, onPress, kind = 'filled', icon, disabled, busy, 
   return (
     <Pressable
       onPress={() => { haptic.tap(); onPress(); }}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled || !!busy, busy: !!busy }}
       disabled={disabled || busy}
       style={({ pressed }) => [{
-        backgroundColor: bg, borderRadius: 14, borderCurve: 'continuous', height: 52, flexDirection: 'row', gap: 8,
+        backgroundColor: bg, borderRadius: 14, borderCurve: 'continuous', minHeight: 52, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', gap: 8,
         alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
       }, style]}
     >
@@ -143,7 +146,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 // Circular action used on the home screen (like Apple Wallet / Cash).
 export function CircleAction({ icon, label, onPress }: { icon: SymbolViewProps['name']; label: string; onPress: () => void }) {
   return (
-    <Pressable onPress={() => { haptic.tap(); onPress(); }} style={({ pressed }) => ({ alignItems: 'center', gap: 8, opacity: pressed ? 0.6 : 1 })}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => { haptic.tap(); onPress(); }} style={({ pressed }) => ({ alignItems: 'center', gap: 8, opacity: pressed ? 0.6 : 1 })}>
       <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={icon} size={24} color={C.onAccent} weight="semibold" />
       </View>
@@ -155,7 +158,7 @@ export function CircleAction({ icon, label, onPress }: { icon: SymbolViewProps['
 export function TxRow({ amount, time, confirmations, onPress }: { amount: number; time: number; confirmations: number; onPress: () => void }) {
   const inc = amount >= 0;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: pressed ? C.elevated : 'transparent' })}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: pressed ? C.elevated : 'transparent' })}>
       <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: inc ? C.greenTint : C.elevated }}>
         <Icon name={inc ? 'arrow.down' : 'arrow.up'} size={16} color={inc ? C.green : C.label} weight="bold" />
       </View>
@@ -166,7 +169,7 @@ export function TxRow({ amount, time, confirmations, onPress }: { amount: number
         </Text>
       </View>
       <Text style={{ color: inc ? C.green : C.label, fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
-        {inc ? '+' : '−'}{fmt(Math.abs(amount), 4)}
+        {inc ? '+' : '−'}{fmt(Math.abs(amount))}
       </Text>
     </Pressable>
   );

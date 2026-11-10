@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, ScrollView, Text, View } from 'react-native';
 import { C, fmt, haptic, Icon, Row, Section } from '@/components/ui';
 import { useWallet } from '@/lib/wallet';
@@ -9,6 +10,7 @@ export default function TxDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { txs, c, load, setup } = useWallet();
   const t = txs?.find(x => x.txid === id);
+  const [copied, setCopied] = useState<string>();
   if (!t) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -25,7 +27,7 @@ export default function TxDetail() {
       .catch(e => { haptic.error(); Alert.alert('Lỗi', String(e.message)); return false; });
 
   const copy = (text: string) =>
-    Clipboard.setStringAsync(text).then(() => haptic.success())
+    Clipboard.setStringAsync(text).then(() => { haptic.success(); setCopied(text); setTimeout(() => setCopied(v => (v === text ? undefined : v)), 1500); })
       .catch(e => Alert.alert('Không sao chép được', String(e.message)));
 
   const explorer = () =>
@@ -34,7 +36,11 @@ export default function TxDetail() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 28 }}>
-      <View style={{ alignItems: 'center', gap: 10, paddingTop: 12 }}>
+      <View
+        accessible
+        accessibilityLabel={(inc ? 'Nhận ' : 'Gửi ') + fmt(Math.abs(t.amount)) + ' PRL, ' + (pending ? 'đang chờ xác nhận' : 'đã xác nhận')}
+        style={{ alignItems: 'center', gap: 10, paddingTop: 12 }}
+      >
         <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: inc ? 'rgba(48,209,88,0.15)' : C.group }}>
           <Icon name={inc ? 'arrow.down' : 'arrow.up'} size={28} color={inc ? C.green : C.label} weight="bold" />
         </View>
@@ -54,11 +60,11 @@ export default function TxDetail() {
         <Row title="Thời gian" value={new Date(t.time * 1000).toLocaleString('vi-VN')} />
         <Row title="Xác nhận" value={String(t.confirmations)} />
         {!!t.fee && <Row title="Phí" value={fmt(Math.abs(t.fee)) + ' PRL'} />}
-        {!!t.address && <Row title="Địa chỉ" value={t.address} onPress={() => copy(t.address!)} />}
+        {!!t.address && <Row title={copied === t.address ? 'Đã chép' : inc ? 'Địa chỉ của bạn' : 'Người nhận'} value={t.address} onPress={() => copy(t.address!)} />}
       </Section>
 
       <Section header="Mã giao dịch">
-        <Row title={id.slice(0, 10) + '…' + id.slice(-10)} onPress={() => Alert.alert('Mở giao dịch?', 'Xem giao dịch trong trình duyệt.', [
+        <Row title={copied === id ? 'Đã chép' : id.slice(0, 10) + '…' + id.slice(-10)} onPress={() => Alert.alert('Mở giao dịch?', 'Xem giao dịch trong trình duyệt.', [
           { text: 'Hủy', style: 'cancel' },
           { text: 'Sao chép', onPress: () => copy(id) },
           { text: 'Mở', onPress: explorer },

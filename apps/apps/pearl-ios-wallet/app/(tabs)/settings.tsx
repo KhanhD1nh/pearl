@@ -83,13 +83,13 @@ export default function Settings() {
           {!!updateState && <ActivityIndicator color={C.accent} />}
         </Row>
         <Row icon="faceid" iconBg={C.green} title="Face ID">
-          <Switch value={!!prefs?.faceId} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
+          <Switch value={!!prefs?.faceId} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} accessibilityLabel="Face ID" />
         </Row>
       </Section>
 
-      <Section header="Đổi passphrase">
-        <Input placeholder="Passphrase hiện tại" secureTextEntry value={cur} onChangeText={setCur} />
-        <Input placeholder="Passphrase mới" secureTextEntry value={next} onChangeText={setNext} textContentType="newPassword" />
+      <Section header="Đổi passphrase" footer={next && next.length < 8 ? 'Ít nhất 8 ký tự.' : undefined}>
+        <Input placeholder="Passphrase hiện tại" secureTextEntry value={cur} onChangeText={setCur} textContentType="password" returnKeyType="next" editable={!busy} />
+        <Input placeholder="Passphrase mới" secureTextEntry value={next} onChangeText={setNext} textContentType="newPassword" returnKeyType="done" editable={!busy} />
         <View style={{ padding: 12 }}>
           <Button kind="tinted" title="Đổi passphrase" busy={busy} disabled={!cur || next.length < 8} onPress={changePass} />
         </View>
