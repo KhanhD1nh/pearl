@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { Animated, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, AppState, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { C, CircleAction, fmt, Icon, Logo, Row, Section, TxRow } from '@/components/ui';
 import { syncStatus, useWallet } from '@/lib/wallet';
 
@@ -20,6 +20,27 @@ export default function Home() {
   const { balance, sync, peerHeight, txs, loading, load, pull, setup, error } = useWallet();
   const st = syncStatus(sync, peerHeight);
   const recent = txs?.slice(0, 5);
+  const [price, setPrice] = useState<number>();
+
+  useEffect(() => {
+    if (setup?.network !== 'mainnet') return;
+    let active = true;
+    const update = async () => {
+      try {
+        const response = await fetch('https://api.prlscan.com/v1/market/prl');
+        if (!response.ok) throw new Error('Market request failed');
+        const data = await response.json();
+        if (typeof data.price_usd !== 'number' || !Number.isFinite(data.price_usd) || data.price_usd <= 0) throw new Error('Invalid market price');
+        if (active) setPrice(data.price_usd);
+      } catch {
+        if (active) setPrice(undefined);
+      }
+    };
+    update();
+    const timer = setInterval(update, 300000);
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') update(); });
+    return () => { active = false; clearInterval(timer); sub.remove(); };
+  }, [setup?.network]);
 
   return (
     <ScrollView
@@ -45,6 +66,12 @@ export default function Home() {
           {fmt(balance)}
         </Text>
         <Text style={{ color: C.accent, fontSize: 17, fontWeight: '600' }}>PRL</Text>
+        {setup?.network === 'mainnet' && (
+          <Text style={{ color: C.secondary, fontSize: 15, fontVariant: ['tabular-nums'] }}>
+            {price === undefined ? 'Giá PRL không khả dụng' : `1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`}
+            {price !== undefined && balance !== undefined ? ` · Số dư ≈ $${(balance * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+          </Text>
+        )}
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 64 }}>

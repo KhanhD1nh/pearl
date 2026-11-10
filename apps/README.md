@@ -18,6 +18,12 @@ Electron, React, and TypeScript.
 
 **Location:** [apps/pearl-desktop-wallet](./apps/pearl-desktop-wallet)
 
+### Pearl iOS Wallet (`pearl-ios-wallet`)
+
+The wallet shows mainnet PRL/USD pricing from `https://api.prlscan.com/v1/market/prl` and an estimated USD balance. Prices refresh every five minutes and when the app returns to the foreground; unavailable prices are not shown as zero.
+
+**Location:** [apps/pearl-ios-wallet](./apps/pearl-ios-wallet)
+
 ## 🚀 Prerequisites
 
 Before getting started, ensure you have the following installed:
