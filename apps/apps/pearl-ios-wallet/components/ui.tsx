@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { SymbolView, SymbolViewProps } from 'expo-symbols';
-import { Children, ReactNode } from 'react';
-import { ActivityIndicator, ColorValue, DynamicColorIOS, Image, PlatformColor, Pressable, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import { Children, ReactNode, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, ActivityIndicator, Animated, ColorValue, DynamicColorIOS, Image, PlatformColor, Pressable, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 
 // iOS semantic colors follow the app's appearance (Appearance.setColorScheme in lib/theme.ts),
 // so no re-render is needed when the user switches dark/system. Accent = desktop --primary,
@@ -98,23 +98,41 @@ export function Input(p: TextInputProps) {
     />
   );
 }
+// Native-driven press feedback; skip motion until the accessibility setting is known.
+function usePressMotion() {
+  const scale = useRef(new Animated.Value(1)).current;
+  const [reduceMotion, setReduceMotion] = useState(true);
+  useEffect(() => {
+    let active = true;
+    AccessibilityInfo.isReduceMotionEnabled().then(value => { if (active) setReduceMotion(value); });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => { active = false; sub.remove(); };
+  }, []);
+  const animate = (pressed: boolean) => Animated.timing(scale, { toValue: pressed && !reduceMotion ? 0.97 : 1, duration: reduceMotion ? 0 : 110, useNativeDriver: true }).start();
+  return { scale, animate };
+}
+
 
 export function Button({ title, onPress, kind = 'filled', icon, disabled, busy, style }: {
   title: string; onPress: () => void; kind?: 'filled' | 'tinted' | 'plain'; icon?: SymbolViewProps['name'];
   disabled?: boolean; busy?: boolean; style?: ViewStyle;
 }) {
+  const { scale, animate } = usePressMotion();
   const bg = kind === 'filled' ? C.accent : kind === 'tinted' ? C.accentTint : 'transparent';
   const fg = kind === 'filled' ? C.onAccent : C.accent;
   return (
+    <Animated.View style={[style, { transform: [{ scale }] }]}>
     <Pressable
       onPress={() => { haptic.tap(); onPress(); }}
+      onPressIn={() => animate(true)}
+      onPressOut={() => animate(false)}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled || !!busy, busy: !!busy }}
       disabled={disabled || busy}
-      style={({ pressed }) => [{
+      style={({ pressed }) => ({
         backgroundColor: bg, borderRadius: 14, borderCurve: 'continuous', minHeight: 52, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', gap: 8,
         alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
-      }, style]}
+      })}
     >
       {busy ? <ActivityIndicator color={fg} /> : (
         <>
@@ -123,6 +141,7 @@ export function Button({ title, onPress, kind = 'filled', icon, disabled, busy, 
         </>
       )}
     </Pressable>
+    </Animated.View>
   );
 }
 
@@ -145,13 +164,14 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 
 // Circular action used on the home screen (like Apple Wallet / Cash).
 export function CircleAction({ icon, label, onPress }: { icon: SymbolViewProps['name']; label: string; onPress: () => void }) {
+  const { scale, animate } = usePressMotion();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => { haptic.tap(); onPress(); }} style={({ pressed }) => ({ alignItems: 'center', gap: 8, opacity: pressed ? 0.6 : 1 })}>
+    <Animated.View style={{ transform: [{ scale }] }}><Pressable accessibilityRole="button" accessibilityLabel={label} onPressIn={() => animate(true)} onPressOut={() => animate(false)} onPress={() => { haptic.tap(); onPress(); }} style={({ pressed }) => ({ alignItems: 'center', gap: 8, opacity: pressed ? 0.6 : 1 })}>
       <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={icon} size={24} color={C.onAccent} weight="semibold" />
       </View>
       <Text style={{ color: C.label, fontSize: 13, fontWeight: '500' }}>{label}</Text>
-    </Pressable>
+    </Pressable></Animated.View>
   );
 }
 
