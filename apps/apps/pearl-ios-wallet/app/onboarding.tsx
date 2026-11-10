@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
-import { Button, C, haptic, Input, Logo, Section, Segmented } from '@/components/ui';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { SymbolViewProps } from 'expo-symbols';
+import { Button, C, haptic, Icon, Input, Logo, Section, Segmented } from '@/components/ui';
 import * as Oyster from '@/modules/oyster';
 import { Network, oysterArgs, randomCred, Setup, useWallet } from '@/lib/wallet';
 
@@ -50,34 +51,54 @@ export default function Onboarding() {
     <ScrollView
       style={{ backgroundColor: C.bg }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, paddingTop: 32, paddingBottom: 40, gap: 24 }}
+      contentContainerStyle={{ padding: 20, paddingTop: 24, paddingBottom: 40, gap: 28 }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       automaticallyAdjustKeyboardInsets
     >
-      <View style={{ alignItems: 'center', gap: 8, paddingTop: 16 }}>
-        <Logo size={88} />
-        <Text style={{ color: C.label, fontSize: 34, fontWeight: '700' }}>Pearl Wallet</Text>
-        <Text style={{ color: C.secondary, fontSize: 17, textAlign: 'center' }}>Khóa riêng nằm trên máy.</Text>
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 24 }}>
+        <Logo size={96} />
+        <Text accessibilityRole="header" style={{ color: C.label, fontSize: 34, fontWeight: '700' }}>Pearl Wallet</Text>
+        <Text style={{ color: C.secondary, fontSize: 17, textAlign: 'center' }}>Khóa riêng nằm trên máy của bạn.</Text>
       </View>
 
-      <View style={{ gap: 12 }}>
-        <Segmented value={mode} onChange={setMode} options={[['new', 'Tạo ví mới'], ['import', 'Khôi phục ví']]} />
-        <Segmented value={network} onChange={setNetwork} options={[['mainnet', 'Mainnet'], ['testnet2', 'Testnet']]} />
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <Choice icon="plus.circle.fill" title="Tạo ví mới" on={!importing} onPress={() => setMode('new')} />
+        <Choice icon="arrow.down.circle.fill" title="Khôi phục" on={importing} onPress={() => setMode('import')} />
       </View>
+
+      <Section header="Mạng">
+        <View style={{ padding: 8 }}>
+          <Segmented value={network} onChange={setNetwork} options={[['mainnet', 'Mainnet'], ['testnet2', 'Testnet']]} />
+        </View>
+      </Section>
 
       {importing && (
-        <Section header="12 từ khôi phục" footer={seedWords ? `${seedWords}/12 từ` : undefined}>
+        <Section header="12 từ khôi phục" footer={seedWords ? `${seedWords}/12 từ` : 'Cách nhau bằng dấu cách.'}>
           <Input multiline editable={!busy} accessibilityLabel="12 từ khôi phục" placeholder="word1 word2 word3 …" value={seed} onChangeText={setSeed} spellCheck={false} autoComplete="off" style={{ minHeight: 110, textAlignVertical: 'top', paddingTop: 13 }} />
         </Section>
       )}
 
-      <Section header="Passphrase" footer={short ? 'Ít nhất 8 ký tự.' : mismatch ? 'Passphrase không khớp.' : undefined}>
+      <Section header="Passphrase" footer={short ? 'Ít nhất 8 ký tự.' : mismatch ? 'Passphrase không khớp.' : 'Dùng để mở khóa ví khi gửi tiền.'}>
         <Input placeholder="Passphrase" secureTextEntry value={pass} onChangeText={setPass} textContentType="newPassword" returnKeyType="next" editable={!busy} />
         <Input placeholder="Nhập lại" secureTextEntry value={pass2} onChangeText={setPass2} textContentType="newPassword" returnKeyType="done" editable={!busy} />
       </Section>
 
-      <Button title={importing ? 'Khôi phục ví' : 'Tạo ví'} onPress={submit} busy={busy} disabled={!pass || !pass2 || (importing && !seed)} />
+      <Button title={importing ? 'Khôi phục ví' : 'Tạo ví'} icon={importing ? 'arrow.down.circle' : 'plus'} onPress={submit} busy={busy} disabled={!pass || !pass2 || (importing && !seed)} />
     </ScrollView>
+  );
+}
+
+function Choice({ icon, title, on, onPress }: { icon: SymbolViewProps['name']; title: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: on }}
+      onPress={() => { if (!on) { haptic.tap(); onPress(); } }}
+      style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 10, paddingVertical: 20, borderRadius: 18, borderCurve: 'continuous', backgroundColor: on ? C.accentTint : C.group, borderWidth: 2, borderColor: on ? C.accent : 'transparent', opacity: pressed ? 0.7 : 1 })}
+    >
+      <Icon name={icon} size={30} color={on ? C.accent : C.secondary} />
+      <Text style={{ color: C.label, fontSize: 16, fontWeight: on ? '600' : '500' }}>{title}</Text>
+    </Pressable>
   );
 }

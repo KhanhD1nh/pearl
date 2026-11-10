@@ -47,9 +47,9 @@ export function Icon({ name, size = 20, color = C.accent, weight }: { name: Symb
 export function Section({ header, footer, children }: { header?: string; footer?: string; children: ReactNode }) {
   const rows = Children.toArray(children).filter(Boolean);
   return (
-    <View style={{ gap: 6 }}>
-      {header && <Text style={{ color: C.secondary, fontSize: 13, textTransform: 'uppercase', paddingHorizontal: 16 }}>{header}</Text>}
-      <View style={{ backgroundColor: C.group, borderRadius: 12, borderCurve: 'continuous', overflow: 'hidden' }}>
+    <View style={{ gap: 8 }}>
+      {header && <Text style={{ color: C.secondary, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, paddingHorizontal: 16 }}>{header}</Text>}
+      <View style={{ backgroundColor: C.group, borderRadius: 20, borderCurve: 'continuous', overflow: 'hidden' }}>
         {rows.map((r, i) => (
           <View key={i}>
             {i > 0 && <View style={{ height: 0.5, backgroundColor: C.separator, marginLeft: 16 }} />}
@@ -71,10 +71,10 @@ export function Row({ icon, iconBg, title, value, onPress, chevron, destructive,
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       disabled={!onPress}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, minHeight: 48, paddingVertical: 10, backgroundColor: pressed ? C.elevated : 'transparent' })}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, minHeight: 56, paddingVertical: 12, backgroundColor: pressed ? C.elevated : 'transparent' })}
     >
       {icon && (
-        <View style={{ width: 30, height: 30, borderRadius: 7, borderCurve: 'continuous', backgroundColor: iconBg ?? C.elevated, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 34, height: 34, borderRadius: 10, borderCurve: 'continuous', backgroundColor: iconBg ?? C.elevated, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name={icon} size={17} color={iconBg ? '#fff' : C.accent} />
         </View>
       )}
@@ -130,7 +130,7 @@ export function Button({ title, onPress, kind = 'filled', icon, disabled, busy, 
       accessibilityState={{ disabled: !!disabled || !!busy, busy: !!busy }}
       disabled={disabled || busy}
       style={({ pressed }) => ({
-        backgroundColor: bg, borderRadius: 14, borderCurve: 'continuous', minHeight: 52, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', gap: 8,
+        backgroundColor: bg, borderRadius: 18, borderCurve: 'continuous', minHeight: 56, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', gap: 8,
         alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
       })}
     >

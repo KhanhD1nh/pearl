@@ -20,6 +20,7 @@ Electron, React, and TypeScript.
 
 ### Pearl iOS Wallet (`pearl-ios-wallet`)
 
+The iOS wallet uses a balance card with sync status and send/receive actions, monthly activity summaries, redesigned transfer forms, and appearance previews.
 The wallet shows mainnet PRL/USD pricing from `https://api.prlscan.com/v1/market/prl` and an estimated USD balance. Prices refresh every five minutes and when the app returns to the foreground; loading, failures, and stale prices are indicated.
 The activity screen filters transactions by local calendar month and totals received and sent PRL (including unconfirmed entries, excluding fees and conflicted entries). Transaction IDs open the explorer after confirmation.
 Amounts display up to eight decimal places; the send form limits input to eight decimal places and the receive screen offers a retry on address errors.
