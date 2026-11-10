@@ -17,10 +17,10 @@ export default function Log() {
     return () => clearInterval(t);
   }, [setup?.network]);
   return (
-    <ScrollView ref={ref} style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 12 }}
+    <ScrollView ref={ref} style={{ backgroundColor: C.bg }} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16 }}
       onContentSizeChange={() => ref.current?.scrollToEnd({ animated: false })}>
-      <Stack.Screen options={{ headerRight: () => <Pressable hitSlop={8} onPress={() => Share.share({ message: text })} accessibilityLabel="Chia sẻ"><Icon name="square.and.arrow.up" size={20} color={C.label} /></Pressable> }} />
-      <Text selectable style={{ color: C.label, fontFamily: 'Menlo', fontSize: 10 }}>{text || 'Chưa có log.'}</Text>
+      <Stack.Screen options={{ headerRight: () => <Pressable hitSlop={8} disabled={!text} onPress={() => Share.share({ message: text })} accessibilityLabel="Chia sẻ"><Icon name="square.and.arrow.up" size={20} color={C.label} /></Pressable> }} />
+      <Text selectable style={{ color: C.label, fontFamily: 'Menlo', fontSize: 11, lineHeight: 15 }}>{text || 'Chưa có log.'}</Text>
     </ScrollView>
   );
 }

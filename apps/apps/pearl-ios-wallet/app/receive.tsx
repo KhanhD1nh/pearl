@@ -13,7 +13,7 @@ export default function Receive() {
   useEffect(() => {
     wallet.addresses(c)
       .then(a => a[0] ?? wallet.newAddress(c))
-      .then(setAddr, e => Alert.alert('Lỗi', String(e.message)));
+      .then(setAddr, e => { haptic.error(); Alert.alert('Lỗi', String(e.message)); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -26,7 +26,6 @@ export default function Receive() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 24, gap: 24, alignItems: 'center' }}>
-      <Text style={{ color: C.secondary, fontSize: 15, textAlign: 'center' }}>Quét mã hoặc gửi địa chỉ này cho người gửi.</Text>
 
       <View style={{ backgroundColor: '#fff', padding: 18, borderRadius: 24, borderCurve: 'continuous', width: 260, height: 260, alignItems: 'center', justifyContent: 'center' }}>
         {addr ? <QRCode value={addr} size={224} /> : <ActivityIndicator />}
@@ -42,7 +41,7 @@ export default function Receive() {
         <Button style={{ flex: 1 }} icon="square.and.arrow.up" title="Chia sẻ" disabled={!addr} onPress={() => Share.share({ message: addr ?? '' })} />
       </View>
 
-      <Text style={{ color: C.tertiary, fontSize: 13, textAlign: 'center' }}>Chỉ gửi PRL tới địa chỉ này. Tiền nhận được sẽ hiện sau khi có xác nhận.</Text>
+      <Text style={{ color: C.tertiary, fontSize: 13, textAlign: 'center' }}>Chỉ gửi PRL tới địa chỉ này.</Text>
     </ScrollView>
   );
 }

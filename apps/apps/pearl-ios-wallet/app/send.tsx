@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, C, fmt, haptic, Icon, Input, Section } from '@/components/ui';
 import * as Passphrase from '@/lib/passphrase';
@@ -123,12 +124,28 @@ export default function Send() {
       </View>
 
       <Section header="Người nhận">
-        <Input placeholder="Địa chỉ prl1…" value={to} onChangeText={setTo} style={{ fontFamily: 'Menlo', fontSize: 15 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Input
+            placeholder="Địa chỉ prl1…"
+            value={to}
+            onChangeText={setTo}
+            multiline
+            style={{ flex: 1, fontFamily: 'Menlo', fontSize: 15 }}
+          />
+          <Pressable
+            hitSlop={8}
+            accessibilityLabel={to ? 'Xóa địa chỉ' : 'Dán địa chỉ'}
+            onPress={async () => { haptic.tap(); setTo(to ? '' : (await Clipboard.getStringAsync()).trim()); }}
+            style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+          >
+            <Icon name={to ? 'xmark.circle.fill' : 'doc.on.clipboard'} size={20} color={to ? C.tertiary : C.accent} />
+          </Pressable>
+        </View>
       </Section>
 
-      <Section header="Phí mạng" footer={'Phí ' + fee + ' PRL / kB'}>
+      <Section header="Phí mạng">
         <View style={{ flexDirection: 'row', padding: 8, gap: 8 }}>
-          {FEE_LEVELS.map(([k, icon, name, n]) => {
+          {FEE_LEVELS.map(([k, icon, name]) => {
             const on = level === k;
             return (
               <Pressable
@@ -138,7 +155,7 @@ export default function Send() {
               >
                 <Icon name={icon} size={18} color={on ? C.accent : C.secondary} />
                 <Text style={{ color: on ? C.accent : C.label, fontSize: 15, fontWeight: '600' }}>{name}</Text>
-                <Text style={{ color: C.secondary, fontSize: 12 }}>~{n} block</Text>
+                <Text style={{ color: C.secondary, fontSize: 12 }}>{fees[k]} PRL/kB</Text>
               </Pressable>
             );
           })}
@@ -146,7 +163,7 @@ export default function Send() {
       </Section>
 
       {saved === false && (
-        <Section header="Xác thực" >
+        <Section header="Passphrase">
           <Input placeholder="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
         </Section>
       )}

@@ -48,7 +48,7 @@ function useLocked(hasWallet: boolean) {
   };
   useEffect(() => {
     if (!prefs) return; // still loading: stay locked
-    if (!on) return lock(false);
+    if (!on) { lock(true); return; }
     unlock();
     // Auto-prompt once per return from background; after a cancel the user taps "Mở khóa".
     let fromBackground = false;

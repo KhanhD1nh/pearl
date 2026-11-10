@@ -47,15 +47,15 @@ export default function Onboarding() {
     <ScrollView
       style={{ backgroundColor: C.bg }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, paddingTop: 48, gap: 28 }}
+      contentContainerStyle={{ padding: 20, paddingTop: 32, paddingBottom: 40, gap: 24 }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       automaticallyAdjustKeyboardInsets
     >
-      <View style={{ alignItems: 'center', gap: 12 }}>
-        <Logo size={96} />
+      <View style={{ alignItems: 'center', gap: 8, paddingTop: 16 }}>
+        <Logo size={88} />
         <Text style={{ color: C.label, fontSize: 34, fontWeight: '700' }}>Pearl Wallet</Text>
-        <Text style={{ color: C.secondary, fontSize: 17, textAlign: 'center' }}>Ví chạy ngay trên iPhone.{'\n'}Khóa riêng không bao giờ rời máy.</Text>
+        <Text style={{ color: C.secondary, fontSize: 17, textAlign: 'center' }}>Khóa riêng nằm trên máy.</Text>
       </View>
 
       <View style={{ gap: 12 }}>
@@ -65,13 +65,13 @@ export default function Onboarding() {
 
       {importing && (
         <Section header="12 từ khôi phục">
-          <Input multiline placeholder="word1 word2 word3 …" value={seed} onChangeText={setSeed} style={{ minHeight: 110, textAlignVertical: 'top', paddingTop: 13 }} />
+          <Input multiline placeholder="word1 word2 word3 …" value={seed} onChangeText={setSeed} spellCheck={false} autoComplete="off" style={{ minHeight: 110, textAlignVertical: 'top', paddingTop: 13 }} />
         </Section>
       )}
 
-      <Section header="Passphrase" footer="Dùng để mở khóa khi gửi tiền. Không thể khôi phục nếu quên — khi đó cần 12 từ.">
-        <Input placeholder="Passphrase" secureTextEntry value={pass} onChangeText={setPass} textContentType="newPassword" />
-        <Input placeholder="Nhập lại" secureTextEntry value={pass2} onChangeText={setPass2} textContentType="newPassword" />
+      <Section header="Passphrase">
+        <Input placeholder="Passphrase" secureTextEntry value={pass} onChangeText={setPass} textContentType="newPassword" returnKeyType="next" />
+        <Input placeholder="Nhập lại" secureTextEntry value={pass2} onChangeText={setPass2} textContentType="newPassword" returnKeyType="done" />
       </Section>
 
       <Button title={importing ? 'Khôi phục ví' : 'Tạo ví'} onPress={submit} busy={busy} disabled={!pass || !pass2 || (importing && !seed)} />

@@ -60,21 +60,26 @@ export default function Home() {
       </View>
 
       {/* Balance hero */}
-      <View style={{ alignItems: 'center', gap: 6, paddingVertical: 12 }}>
+      <View style={{ alignItems: 'center', gap: 4, paddingTop: 20, paddingBottom: 4 }}>
         <Text style={{ color: C.secondary, fontSize: 15 }}>Số dư</Text>
-        <Text selectable adjustsFontSizeToFit numberOfLines={1} style={{ color: C.label, fontSize: 48, fontWeight: '700', fontVariant: ['tabular-nums'], letterSpacing: -1 }}>
-          {fmt(balance)}
-        </Text>
-        <Text style={{ color: C.accent, fontSize: 17, fontWeight: '600' }}>PRL</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingHorizontal: 16 }}>
+          <Text selectable adjustsFontSizeToFit minimumFontScale={0.5} numberOfLines={1} style={{ color: C.label, fontSize: 52, fontWeight: '700', fontVariant: ['tabular-nums'], letterSpacing: -1, flexShrink: 1 }}>
+            {fmt(balance)}
+          </Text>
+          <Text style={{ color: C.accent, fontSize: 20, fontWeight: '700' }}>PRL</Text>
+        </View>
         {setup?.network === 'mainnet' && (
-          <Text style={{ color: C.secondary, fontSize: 15, fontVariant: ['tabular-nums'] }}>
-            {price === undefined ? 'Giá PRL không khả dụng' : `1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`}
-            {price !== undefined && balance !== undefined ? ` · Số dư ≈ $${(balance * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+          <Text style={{ color: C.secondary, fontSize: 15, fontVariant: ['tabular-nums'], textAlign: 'center' }}>
+            {price === undefined
+              ? 'Giá PRL không khả dụng'
+              : balance !== undefined
+                ? `≈ $${(balance * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · 1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`
+                : `1 PRL ≈ $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })}`}
           </Text>
         )}
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 64 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 72 }}>
         <CircleAction icon="arrow.up" label="Gửi" onPress={() => router.push('/send')} />
         <CircleAction icon="arrow.down" label="Nhận" onPress={() => router.push('/receive')} />
       </View>
@@ -85,26 +90,26 @@ export default function Home() {
         </Section>
       )}
 
-      {/* Sync status */}
-      <Section>
-        <Row
-          icon={st.synced ? 'checkmark.circle.fill' : 'arrow.triangle.2.circlepath'}
-          iconBg={st.synced ? C.green : C.orange}
-          title={st.synced ? 'Đã đồng bộ' : 'Đang đồng bộ'}
-          value={st.synced ? (sync?.connections ?? 0) + ' peer' : (st.pct * 100).toFixed(1) + '%'}
-        />
-        {!st.synced && (
+      {/* Sync status: compact line when synced, detail card while syncing */}
+      {st.synced ? (
+        <View accessible accessibilityLabel={`Đã đồng bộ, ${sync?.connections ?? 0} peer`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -12 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.green }} />
+          <Text style={{ color: C.secondary, fontSize: 13 }}>Đã đồng bộ · {sync?.connections ?? 0} peer</Text>
+        </View>
+      ) : (
+        <Section>
+          <Row icon="arrow.triangle.2.circlepath" iconBg={C.orange} title="Đang đồng bộ" value={(st.pct * 100).toFixed(1) + '%'} />
           <View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 8 }}>
             <ProgressBar pct={st.pct} />
             <Text style={{ color: C.secondary, fontSize: 13, fontVariant: ['tabular-nums'] }}>{st.label}</Text>
           </View>
-        )}
-      </Section>
+        </Section>
+      )}
 
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', paddingHorizontal: 16 }}>
           <Text style={{ color: C.label, fontSize: 20, fontWeight: '700', flex: 1 }}>Gần đây</Text>
-          {!!txs?.length && <Text style={{ color: C.accent, fontSize: 15 }} onPress={() => router.push('/activity')}>Xem tất cả</Text>}
+          {!!txs?.length && <Text accessibilityRole="link" style={{ color: C.accent, fontSize: 15, paddingVertical: 6, paddingLeft: 12 }} onPress={() => router.push('/activity')}>Xem tất cả</Text>}
         </View>
         <Section>
           {txs === undefined && <Row title="Đang tải…" />}

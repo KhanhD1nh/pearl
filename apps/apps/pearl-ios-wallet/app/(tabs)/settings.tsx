@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Switch, Text, View } from 'react-native';
 import { Button, C, haptic, Input, Row, Section } from '@/components/ui';
 import * as Passphrase from '@/lib/passphrase';
 import { authenticate, biometricReady, THEME_LABEL, usePrefs } from '@/lib/prefs';
@@ -15,20 +15,26 @@ export default function Settings() {
   const [next, setNext] = useState('');
   const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState<boolean>();
+  const [updateState, setUpdateState] = useState<'checking' | 'downloading' | null>(null);
   useEffect(() => { biometricReady().then(setBio); }, []);
 
   const checkUpdates = async () => {
+    if (updateState) return;
+    setUpdateState('checking');
     try {
       const update = await Updates.checkForUpdateAsync();
       if (!update.isAvailable) return Alert.alert('Ứng dụng đã cập nhật');
       Alert.alert('Có bản cập nhật', 'Tải bản cập nhật? Đóng và mở lại ứng dụng để áp dụng.', [
         { text: 'Để sau', style: 'cancel' },
         { text: 'Tải', onPress: async () => {
+          setUpdateState('downloading');
           try { await Updates.fetchUpdateAsync(); Alert.alert('Đã tải', 'Đóng hoàn toàn và mở lại ứng dụng để áp dụng.'); }
           catch (e) { Alert.alert('Không cập nhật được', String((e as Error).message)); }
+          finally { setUpdateState(null); }
         } },
       ]);
     } catch (e) { Alert.alert('Không kiểm tra được cập nhật', String((e as Error).message)); }
+    finally { setUpdateState(null); }
   };
 
   const changePass = async () => {
@@ -73,7 +79,9 @@ export default function Settings() {
 
       <Section header="Chung">
         <Row icon="circle.lefthalf.filled" iconBg={C.indigo} title="Giao diện" value={THEME_LABEL[prefs?.theme ?? 'dark']} chevron onPress={() => router.push('/appearance')} />
-        <Row icon="arrow.down.circle" iconBg={C.blue} title="Kiểm tra cập nhật" onPress={checkUpdates} />
+        <Row icon="arrow.down.circle" iconBg={C.blue} title={updateState === 'checking' ? 'Đang kiểm tra…' : updateState === 'downloading' ? 'Đang tải cập nhật…' : 'Kiểm tra cập nhật'} onPress={updateState ? undefined : checkUpdates}>
+          {!!updateState && <ActivityIndicator color={C.accent} />}
+        </Row>
         <Row icon="faceid" iconBg={C.green} title="Face ID">
           <Switch value={!!prefs?.faceId} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
         </Row>
