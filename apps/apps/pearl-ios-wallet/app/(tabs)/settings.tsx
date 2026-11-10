@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Switch, Text, View } from 'react-native';
 import { Button, C, haptic, Input, Row, Section } from '@/components/ui';
@@ -15,6 +16,20 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState<boolean>();
   useEffect(() => { biometricReady().then(setBio); }, []);
+
+  const checkUpdates = async () => {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (!update.isAvailable) return Alert.alert('Ứng dụng đã cập nhật');
+      Alert.alert('Có bản cập nhật', 'Tải bản cập nhật? Đóng và mở lại ứng dụng để áp dụng.', [
+        { text: 'Để sau', style: 'cancel' },
+        { text: 'Tải', onPress: async () => {
+          try { await Updates.fetchUpdateAsync(); Alert.alert('Đã tải', 'Đóng hoàn toàn và mở lại ứng dụng để áp dụng.'); }
+          catch (e) { Alert.alert('Không cập nhật được', String((e as Error).message)); }
+        } },
+      ]);
+    } catch (e) { Alert.alert('Không kiểm tra được cập nhật', String((e as Error).message)); }
+  };
 
   const changePass = async () => {
     setBusy(true);
@@ -58,6 +73,7 @@ export default function Settings() {
 
       <Section header="Chung">
         <Row icon="circle.lefthalf.filled" iconBg={C.indigo} title="Giao diện" value={THEME_LABEL[prefs?.theme ?? 'dark']} chevron onPress={() => router.push('/appearance')} />
+        <Row icon="arrow.down.circle" iconBg={C.blue} title="Kiểm tra cập nhật" onPress={checkUpdates} />
         <Row icon="faceid" iconBg={C.green} title="Face ID">
           <Switch value={!!prefs?.faceId} onValueChange={toggleLogin} disabled={!bio} trackColor={{ true: C.green }} />
         </Row>

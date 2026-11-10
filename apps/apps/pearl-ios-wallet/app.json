@@ -3,6 +3,13 @@
     "name": "Pearl Wallet",
     "slug": "pearl-ios-wallet",
     "version": "1.0.0",
+    "runtimeVersion": "pearl-ios-ota-1",
+    "updates": {
+      "url": "https://pearl-wallet-ota.dgkhanh2003.workers.dev",
+      "checkAutomatically": "NEVER",
+      "codeSigningCertificate": "./certs/certificate.pem",
+      "codeSigningMetadata": { "keyid": "main", "alg": "rsa-v1_5-sha256" }
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

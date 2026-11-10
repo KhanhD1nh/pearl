@@ -22,6 +22,8 @@ Electron, React, and TypeScript.
 
 The wallet shows mainnet PRL/USD pricing from `https://api.prlscan.com/v1/market/prl` and an estimated USD balance. Prices refresh every five minutes and when the app returns to the foreground; unavailable prices are not shown as zero.
 
+OTA updates are signed locally, stored in GitHub releases, and served by the Cloudflare Worker in `apps/pearl-ios-wallet/ota`. Keep the private signing key offline and backed up; never commit it. From the iOS app directory, run `pnpm exec expo export -p ios --output-dir <export-directory>` followed by `node ota/publish.mjs <export-directory> <private-key.pem>`. The `ota-updates` branch holds signed manifests. Increment `runtimeVersion` for native changes, including Go/Swift and signing certificate changes, and distribute a new IPA. The app checks manually in Settings and asks before restarting.
+
 **Location:** [apps/pearl-ios-wallet](./apps/pearl-ios-wallet)
 
 ## 🚀 Prerequisites
