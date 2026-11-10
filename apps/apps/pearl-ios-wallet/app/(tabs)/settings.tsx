@@ -3,7 +3,6 @@ import { SymbolViewProps } from 'expo-symbols';
 import * as Updates from 'expo-updates';
 import { ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ColorValue, ScrollView, Switch, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Button, C, haptic, Icon, Input, Logo, Row, Section } from '@/components/ui';
 import * as Passphrase from '@/lib/passphrase';
 import { authenticate, biometricReady, THEME_LABEL, usePrefs } from '@/lib/prefs';
@@ -77,22 +76,14 @@ export default function Settings() {
     >
       <Text accessibilityRole="header" style={{ color: C.label, fontSize: 34, fontWeight: '700', paddingTop: 8 }}>Cài đặt</Text>
 
-      <View style={{ backgroundColor: '#192c25', borderRadius: 28, borderCurve: 'continuous', padding: 22, gap: 20, overflow: 'hidden' }}>
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
-          <Svg width="100%" height="100%">
-            <Defs><LinearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#304c3d" /><Stop offset="1" stopColor="#101c19" /></LinearGradient></Defs>
-            <Rect width="100%" height="100%" fill="url(#hero)" />
-            <Circle cx="100%" cy="0" r="110" fill="#cfe98a" opacity={0.07} />
-            <Circle cx="0" cy="100%" r="70" fill="#cfe98a" opacity={0.05} />
-          </Svg>
-        </View>
+      <View style={{ backgroundColor: C.group, borderRadius: 20, borderCurve: 'continuous', padding: 20, gap: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <Logo size={56} />
           <View style={{ flex: 1, gap: 6 }}>
-            <Text style={{ color: '#ffffff', fontSize: 24, fontWeight: '700' }}>Pearl Wallet</Text>
+            <Text style={{ color: C.label, fontSize: 24, fontWeight: '700' }}>Pearl Wallet</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} accessible accessibilityLabel={`${net}, ${peers > 0 ? 'đã kết nối' : 'chưa có peer'}`}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: peers > 0 ? C.green : C.orange }} />
-              <Text style={{ color: '#d0dbce', fontSize: 15 }}>{net} · {peers > 0 ? 'Đã kết nối' : 'Chưa có peer'}</Text>
+              <Text style={{ color: C.secondary, fontSize: 15 }}>{net} · {peers > 0 ? 'Đã kết nối' : 'Chưa có peer'}</Text>
             </View>
           </View>
         </View>
@@ -154,9 +145,9 @@ function Group({ icon, tone, title, footer, children }: { icon: SymbolViewProps[
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}`} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 16, borderCurve: 'continuous', padding: 14, gap: 2 }}>
-      <Text style={{ color: '#d0dbce', fontSize: 13 }}>{label}</Text>
-      <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: '#cfe98a', fontSize: 24, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{value}</Text>
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={{ flex: 1, backgroundColor: C.elevated, borderRadius: 16, borderCurve: 'continuous', padding: 14, gap: 2 }}>
+      <Text style={{ color: C.secondary, fontSize: 13 }}>{label}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: C.label, fontSize: 24, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{value}</Text>
     </View>
   );
 }
