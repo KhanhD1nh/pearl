@@ -1,13 +1,12 @@
-import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, Text, View } from 'react-native';
 import { C, fmt, haptic, Icon, Row, Section } from '@/components/ui';
 import { useWallet } from '@/lib/wallet';
 import { wallet } from '@/rpc';
 
 export default function TxDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { txs, c, load } = useWallet();
+  const { txs, c, load, setup } = useWallet();
   const t = txs?.find(x => x.txid === id);
   if (!t) return <View style={{ flex: 1, backgroundColor: C.bg }} />;
   const inc = t.amount >= 0;
@@ -38,8 +37,11 @@ export default function TxDetail() {
       </Section>
 
       <Section header="Mã giao dịch">
-        <Row title={id.slice(0, 10) + '…' + id.slice(-10)} onPress={async () => { await Clipboard.setStringAsync(id); haptic.success(); Alert.alert('Đã chép mã giao dịch'); }}>
-          <Icon name="doc.on.doc" size={17} />
+        <Row title={id.slice(0, 10) + '…' + id.slice(-10)} onPress={() => Alert.alert('Mở giao dịch?', 'Xem giao dịch trong trình duyệt.', [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Mở', onPress: () => { Linking.openURL(`https://explorer.pearlresearch.ai/tx/${encodeURIComponent(id)}?network=${setup?.network === 'testnet2' ? 'testnet' : 'mainnet'}`).catch(e => Alert.alert('Không mở được trình duyệt', String(e.message))); } },
+        ])}>
+          <Icon name="arrow.up.right.square" size={17} />
         </Row>
       </Section>
 
