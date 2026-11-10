@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Share, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Button, C, haptic, Icon } from '@/components/ui';
 import { useWallet } from '@/lib/wallet';
 import { wallet } from '@/rpc';
@@ -45,27 +46,41 @@ export default function Receive() {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 32 }}>
 
-      <View style={{ backgroundColor: C.group, borderRadius: 28, borderCurve: 'continuous', padding: 20, alignItems: 'center', gap: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.accentTint, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 }}>
-          <Icon name="arrow.down.circle.fill" size={15} />
-          <Text style={{ color: C.accent, fontSize: 13, fontWeight: '600' }}>Nhận PRL · {net}</Text>
+      <View style={{ backgroundColor: '#192c25', borderRadius: 28, borderCurve: 'continuous', padding: 22, gap: 18, overflow: 'hidden', alignItems: 'center' }}>
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+          <Svg width="100%" height="100%">
+            <Defs><LinearGradient id="recv" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#304c3d" /><Stop offset="1" stopColor="#101c19" /></LinearGradient></Defs>
+            <Rect width="100%" height="100%" fill="url(#recv)" />
+            <Circle cx="100%" cy="0" r="120" fill="#cfe98a" opacity={0.07} />
+            <Circle cx="100%" cy="0" r="78" fill="#cfe98a" opacity={0.06} />
+          </Svg>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#cfe98a', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="arrow.down" size={16} color="#0b0d08" weight="bold" />
+          </View>
+          <Text style={{ color: '#d8e6d7', fontSize: 15, fontWeight: '600', flex: 1 }}>NHẬN PRL</Text>
+          {net === 'Testnet' && (
+            <Text style={{ color: C.orange, fontSize: 12, fontWeight: '700', borderWidth: 1, borderColor: C.orange, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>TESTNET</Text>
+          )}
         </View>
 
         <View
           accessible
           accessibilityRole="image"
           accessibilityLabel={addr ? 'Mã QR địa chỉ nhận' : 'Đang tải địa chỉ'}
-          style={{ backgroundColor: '#fff', padding: 16, borderRadius: 20, borderCurve: 'continuous', width: 248, height: 248, alignItems: 'center', justifyContent: 'center' }}
+          style={{ backgroundColor: '#fff', padding: 16, borderRadius: 24, borderCurve: 'continuous', width: 248, height: 248, alignItems: 'center', justifyContent: 'center' }}
         >
           {addr ? <QRCode value={addr} size={216} /> : failed ? <Icon name="exclamationmark.triangle" size={40} color={C.orange} /> : <ActivityIndicator />}
         </View>
 
         <View style={{ alignSelf: 'stretch', gap: 6, alignItems: 'center' }}>
-          <Text style={{ color: C.secondary, fontSize: 13 }}>Địa chỉ của bạn</Text>
+          <Text style={{ color: '#d0dbce', fontSize: 13 }}>Địa chỉ của bạn</Text>
           <Text
             selectable
             accessibilityLabel={addr ?? undefined}
-            style={{ color: C.label, fontSize: 15, fontFamily: 'Menlo', lineHeight: 24, textAlign: 'center' }}
+            style={{ color: '#ffffff', fontSize: 16, fontFamily: 'Menlo', lineHeight: 26, textAlign: 'center' }}
           >
             {groups ?? (failed ? 'Không tải được địa chỉ' : '…')}
           </Text>
@@ -79,9 +94,9 @@ export default function Receive() {
 
       {failed && <Button kind="tinted" icon="arrow.clockwise" title="Thử lại" onPress={() => setTries(n => n + 1)} />}
 
-      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', paddingHorizontal: 4 }}>
-        <Icon name="info.circle" size={16} color={C.secondary} />
-        <Text style={{ flex: 1, color: C.secondary, fontSize: 13 }}>
+      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: C.accentTint, borderRadius: 16, borderCurve: 'continuous', padding: 14 }}>
+        <Icon name="info.circle.fill" size={18} />
+        <Text style={{ flex: 1, color: C.label, fontSize: 14 }}>
           {setup?.network === 'testnet2' ? 'Testnet: chỉ gửi PRL testnet tới địa chỉ này.' : 'Chỉ gửi PRL tới địa chỉ này.'}
         </Text>
       </View>

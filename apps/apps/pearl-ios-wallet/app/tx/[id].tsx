@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, ScrollView, Text, View } from 'react-native';
 import { C, fmt, haptic, Icon, Row, Section } from '@/components/ui';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useWallet } from '@/lib/wallet';
 import { wallet } from '@/rpc';
 
@@ -34,27 +35,39 @@ export default function TxDetail() {
     Linking.openURL(`https://explorer.pearlresearch.ai/tx/${encodeURIComponent(id)}?network=${setup?.network === 'testnet2' ? 'testnet' : 'mainnet'}`)
       .catch(e => Alert.alert('Không mở được trình duyệt', String(e.message)));
 
-  const tone = inc ? C.green : C.label;
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: 16, gap: 24, paddingBottom: 32 }}>
       <View
         accessible
         accessibilityLabel={(inc ? 'Nhận ' : 'Gửi ') + fmt(Math.abs(t.amount)) + ' PRL, ' + (pending ? 'đang chờ xác nhận' : 'đã xác nhận')}
-        style={{ backgroundColor: C.group, borderRadius: 28, borderCurve: 'continuous', alignItems: 'center', gap: 12, paddingVertical: 28, paddingHorizontal: 16 }}
+        style={{ backgroundColor: '#192c25', borderRadius: 28, borderCurve: 'continuous', alignItems: 'center', gap: 10, paddingTop: 52, paddingBottom: 26, paddingHorizontal: 16, overflow: 'hidden', marginTop: 36 }}
       >
-        <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: inc ? C.greenTint : C.elevated }}>
-          <Icon name={inc ? 'arrow.down' : 'arrow.up'} size={30} color={tone} weight="bold" />
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+          <Svg width="100%" height="100%">
+            <Defs><LinearGradient id="tx" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor={inc ? '#2f5a43' : '#34423d'} /><Stop offset="1" stopColor="#101c19" /></LinearGradient></Defs>
+            <Rect width="100%" height="100%" fill="url(#tx)" />
+            <Circle cx="100%" cy="0" r="120" fill="#cfe98a" opacity={0.07} />
+            <Circle cx="0" cy="100%" r="70" fill="#cfe98a" opacity={0.05} />
+          </Svg>
         </View>
-        <Text style={{ color: C.secondary, fontSize: 15 }}>{inc ? 'Đã nhận' : 'Đã gửi'}</Text>
-        <Text selectable adjustsFontSizeToFit numberOfLines={1} style={{ color: tone, fontSize: 40, fontWeight: '700', fontVariant: ['tabular-nums'], maxWidth: '100%' }}>
-          {inc ? '+' : '−'}{fmt(Math.abs(t.amount))}
-        </Text>
-        <Text style={{ color: C.accent, fontSize: 17, fontWeight: '600' }}>PRL</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pending ? 'rgba(255,149,0,0.15)' : C.elevated, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 }}>
-          <Icon name={pending ? 'clock' : 'checkmark.circle.fill'} size={14} color={pending ? C.orange : C.secondary} />
-          <Text style={{ color: pending ? C.orange : C.secondary, fontSize: 14, fontWeight: '500' }}>
+        <Text style={{ color: '#d0dbce', fontSize: 15, fontWeight: '500' }}>{inc ? 'Đã nhận' : 'Đã gửi'}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, maxWidth: '100%' }}>
+          <Text selectable adjustsFontSizeToFit minimumFontScale={0.5} numberOfLines={1} style={{ color: inc ? '#7ee2a0' : '#ffffff', fontSize: 42, fontWeight: '700', fontVariant: ['tabular-nums'], letterSpacing: -1, flexShrink: 1 }}>
+            {inc ? '+' : '−'}{fmt(Math.abs(t.amount))}
+          </Text>
+          <Text style={{ color: '#cfe98a', fontSize: 18, fontWeight: '700' }}>PRL</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pending ? 'rgba(255,149,0,0.22)' : 'rgba(255,255,255,0.12)', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6, marginTop: 6 }}>
+          <Icon name={pending ? 'clock' : 'checkmark.circle.fill'} size={14} color={pending ? C.orange : '#cfe98a'} />
+          <Text style={{ color: pending ? C.orange : '#ffffff', fontSize: 14, fontWeight: '500' }}>
             {pending ? 'Đang chờ xác nhận' : 'Đã xác nhận'}
           </Text>
+        </View>
+      </View>
+      {/* Icon badge straddles the card's top edge. */}
+      <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', top: 16, left: 0, right: 0, alignItems: 'center' }}>
+        <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: inc ? '#2f8f5b' : '#4a5a53', borderWidth: 4, borderColor: C.bg }}>
+          <Icon name={inc ? 'arrow.down' : 'arrow.up'} size={28} color="#ffffff" weight="bold" />
         </View>
       </View>
 

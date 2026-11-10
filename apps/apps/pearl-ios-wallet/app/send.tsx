@@ -1,3 +1,4 @@
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
@@ -91,9 +92,10 @@ export default function Send() {
     [{ text: 'Hủy', style: 'cancel' }, { text: 'Gửi', style: 'destructive', onPress: submit }],
   );
 
-  const card = { backgroundColor: C.group, borderRadius: 20, borderCurve: 'continuous' as const, overflow: 'hidden' as const };
+  const card = { backgroundColor: C.group, borderRadius: 24, borderCurve: 'continuous' as const, overflow: 'hidden' as const };
   const label = { color: C.secondary, fontSize: 13, fontWeight: '600' as const, textTransform: 'uppercase' as const, letterSpacing: 0.4, marginHorizontal: 4 };
   const ready = !!toTrim && amt > 0 && !tooMuch;
+  const testnet = setup?.network === 'testnet2';
 
   return (
     <ScrollView
@@ -104,12 +106,66 @@ export default function Send() {
       keyboardDismissMode="interactive"
       automaticallyAdjustKeyboardInsets
     >
+      {/* Amount hero: same dark-green gradient card as the home balance */}
+      <View style={{ backgroundColor: '#192c25', borderRadius: 28, borderCurve: 'continuous', padding: 22, gap: 14, overflow: 'hidden' }}>
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+          <Svg width="100%" height="100%">
+            <Defs><LinearGradient id="send" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#304c3d" /><Stop offset="1" stopColor="#101c19" /></LinearGradient></Defs>
+            <Rect width="100%" height="100%" fill="url(#send)" />
+            <Circle cx="100%" cy="0" r="120" fill="#cfe98a" opacity={0.07} />
+            <Circle cx="100%" cy="0" r="78" fill="#cfe98a" opacity={0.06} />
+          </Svg>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#cfe98a', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="arrow.up" size={16} color="#0b0d08" weight="bold" />
+          </View>
+          <Text style={{ color: '#d8e6d7', fontSize: 15, fontWeight: '600', flex: 1 }}>GỬI PRL</Text>
+          {testnet && (
+            <Text style={{ color: C.orange, fontSize: 12, fontWeight: '700', borderWidth: 1, borderColor: C.orange, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>TESTNET</Text>
+          )}
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Input
+            value={amount}
+            onChangeText={onAmount}
+            placeholder="0"
+            placeholderTextColor="rgba(255,255,255,0.35)"
+            selectionColor="#cfe98a"
+            keyboardType="decimal-pad"
+            accessibilityLabel="Số lượng PRL"
+            style={{ flexShrink: 1, fontSize: 52, fontWeight: '700', textAlign: 'center', color: tooMuch ? '#ff8a80' : '#ffffff', minWidth: 80, paddingHorizontal: 0, fontVariant: ['tabular-nums'], letterSpacing: -1 }}
+          />
+          <Text style={{ color: '#cfe98a', fontSize: 22, fontWeight: '700' }}>PRL</Text>
+        </View>
+        <Text accessibilityLiveRegion="polite" style={{ color: tooMuch ? '#ff8a80' : '#d0dbce', fontSize: 15, textAlign: 'center', fontVariant: ['tabular-nums'] }}>
+          {tooMuch ? 'Vượt số dư khả dụng' : 'Khả dụng ' + fmt(spendable) + ' PRL'}
+        </Text>
+
+        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.15)' }} />
+
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[25, 50, 75, 100].map(p => (
+            <Pressable
+              key={p}
+              accessibilityRole="button"
+              accessibilityLabel={p === 100 ? 'Gửi tối đa' : 'Gửi ' + p + '% số dư khả dụng'}
+              onPress={() => { haptic.tap(); setAmount(plain(spendable * p / 100)); }}
+              style={({ pressed }) => ({ flex: 1, backgroundColor: p === 100 ? '#cfe98a' : 'rgba(255,255,255,0.14)', borderRadius: 999, minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text style={{ color: p === 100 ? '#0b0d08' : '#ffffff', fontSize: 14, fontWeight: '700' }}>{p === 100 ? 'Tối đa' : p + '%'}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {/* Recipient */}
       <View style={{ gap: 8 }}>
         <Text accessibilityRole="header" style={label}>Gửi tới</Text>
         <View style={[card, { flexDirection: 'row', alignItems: 'center', paddingLeft: 14 }]}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.accentTint, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="person.crop.circle" size={20} />
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.accentTint, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="person.crop.circle" size={22} />
           </View>
           <Input
             placeholder="Địa chỉ prl1…"
@@ -131,45 +187,11 @@ export default function Send() {
         </View>
       </View>
 
-      {/* Amount */}
-      <View style={{ gap: 8 }}>
-        <Text accessibilityRole="header" style={label}>Số lượng</Text>
-        <View style={[card, { alignItems: 'center', paddingVertical: 20, paddingHorizontal: 16, gap: 6 }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
-            <Input
-              value={amount}
-              onChangeText={onAmount}
-              placeholder="0"
-              keyboardType="decimal-pad"
-              accessibilityLabel="Số lượng PRL"
-              style={{ fontSize: 48, fontWeight: '700', textAlign: 'center', color: tooMuch ? C.red : C.label, minWidth: 80, paddingHorizontal: 0, fontVariant: ['tabular-nums'] }}
-            />
-            <Text style={{ color: C.accent, fontSize: 22, fontWeight: '600' }}>PRL</Text>
-          </View>
-          <Text accessibilityLiveRegion="polite" style={{ color: tooMuch ? C.red : C.secondary, fontSize: 14, fontVariant: ['tabular-nums'] }}>
-            {tooMuch ? 'Vượt số dư khả dụng' : 'Khả dụng ' + fmt(spendable) + ' PRL'}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, alignSelf: 'stretch' }}>
-            {[25, 50, 75, 100].map(p => (
-              <Pressable
-                key={p}
-                accessibilityRole="button"
-                accessibilityLabel={p === 100 ? 'Gửi tối đa' : 'Gửi ' + p + '% số dư khả dụng'}
-                onPress={() => { haptic.tap(); setAmount(plain(spendable * p / 100)); }}
-                style={({ pressed }) => ({ flex: 1, backgroundColor: C.accentTint, borderRadius: 12, borderCurve: 'continuous', minHeight: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
-              >
-                <Text style={{ color: C.accent, fontSize: 14, fontWeight: '600' }}>{p === 100 ? 'Tối đa' : p + '%'}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* Fee */}
+      {/* Fee: three tiles */}
       <View style={{ gap: 8 }}>
         <Text accessibilityRole="header" style={label}>Phí mạng</Text>
-        <View style={card} accessibilityRole="radiogroup">
-          {FEE_LEVELS.map(([k, icon, name, blocks], i) => {
+        <View style={{ flexDirection: 'row', gap: 10 }} accessibilityRole="radiogroup">
+          {FEE_LEVELS.map(([k, icon, name]) => {
             const on = level === k;
             return (
               <Pressable
@@ -178,39 +200,38 @@ export default function Send() {
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={name + ', ' + fees[k] + ' PRL mỗi kB'}
                 onPress={() => { haptic.tap(); setLevel(k); }}
-                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, minHeight: 56, backgroundColor: pressed ? C.elevated : 'transparent', borderTopWidth: i ? 0.5 : 0, borderTopColor: C.separator })}
+                style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 6, minHeight: 88, borderRadius: 20, borderCurve: 'continuous', backgroundColor: on ? C.accentTint : C.group, borderWidth: 2, borderColor: on ? C.accent : 'transparent', opacity: pressed ? 0.7 : 1 })}
               >
-                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: on ? C.accent : C.elevated, alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon name={icon} size={16} color={on ? C.onAccent : C.secondary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.label, fontSize: 17, fontWeight: on ? '600' : '400' }}>{name}</Text>
-                  <Text style={{ color: C.secondary, fontSize: 13 }}>Mục tiêu {blocks} khối</Text>
-                </View>
-                <Text style={{ color: C.secondary, fontSize: 14, fontVariant: ['tabular-nums'] }}>{fees[k]} PRL/kB</Text>
-                <Icon name={on ? 'checkmark.circle.fill' : 'circle'} size={22} color={on ? C.accent : C.tertiary} />
+                <Icon name={icon} size={20} color={on ? C.accent : C.secondary} />
+                <Text style={{ color: C.label, fontSize: 16, fontWeight: on ? '700' : '500' }}>{name}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: C.secondary, fontSize: 12, fontVariant: ['tabular-nums'] }}>{fees[k]}</Text>
               </Pressable>
             );
           })}
         </View>
+        <Text style={{ color: C.secondary, fontSize: 13, marginHorizontal: 4, fontVariant: ['tabular-nums'] }}>
+          PRL/kB · mục tiêu {FEE_LEVELS.find(f => f[0] === level)![3]} khối
+        </Text>
       </View>
 
       {saved === false && (
         <View style={{ gap: 8 }}>
           <Text accessibilityRole="header" style={label}>Passphrase</Text>
-          <View style={card}>
-            <Input placeholder="Passphrase ví" accessibilityLabel="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
+          <View style={[card, { flexDirection: 'row', alignItems: 'center', paddingLeft: 14 }]}>
+            <Icon name="lock.fill" size={20} />
+            <Input style={{ flex: 1 }} placeholder="Passphrase ví" accessibilityLabel="Passphrase ví" secureTextEntry value={pass} onChangeText={setPass} textContentType="password" />
           </View>
         </View>
       )}
 
       {/* Summary */}
       {ready && (
-        <View style={[card, { padding: 16, gap: 8 }]} accessible accessibilityLabel={'Tóm tắt: gửi ' + fmt(amt) + ' PRL, phí ' + fee + ' PRL mỗi kB'}>
+        <View style={[card, { padding: 16, gap: 10 }]} accessible accessibilityLabel={'Tóm tắt: gửi ' + fmt(amt) + ' PRL, phí ' + fee + ' PRL mỗi kB'}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={{ color: C.secondary, fontSize: 15 }}>Gửi</Text>
-            <Text style={{ color: C.label, fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{fmt(amt)} PRL</Text>
+            <Text style={{ color: C.label, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{fmt(amt)} PRL</Text>
           </View>
+          <View style={{ height: 0.5, backgroundColor: C.separator }} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={{ color: C.secondary, fontSize: 15 }}>Phí</Text>
             <Text style={{ color: C.label, fontSize: 15, fontVariant: ['tabular-nums'] }}>{fee} PRL/kB</Text>
