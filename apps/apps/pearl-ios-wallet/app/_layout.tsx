@@ -97,9 +97,9 @@ function Gate() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="send" options={{ presentation: 'formSheet', sheetGrabberVisible: true, sheetAllowedDetents: [1.0], title: 'Gửi Pearl', headerShown: true }} />
         <Stack.Screen name="receive" options={{ presentation: 'formSheet', sheetGrabberVisible: true, sheetAllowedDetents: [0.85, 1.0], title: 'Nhận Pearl', headerShown: true }} />
-        <Stack.Screen name="log" options={{ title: 'Nhật ký', headerBackTitle: 'Cài đặt' }} />
-        <Stack.Screen name="appearance" options={{ title: 'Giao diện', headerBackTitle: 'Cài đặt' }} />
-        <Stack.Screen name="tx/[id]" options={{ title: 'Giao dịch', headerBackTitle: 'Quay lại' }} />
+        <Stack.Screen name="log" options={{ title: 'Nhật ký', headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="appearance" options={{ title: 'Giao diện', headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="tx/[id]" options={{ title: 'Giao dịch', headerBackButtonDisplayMode: 'minimal' }} />
       </Stack.Protected>
     </Stack>
   );
