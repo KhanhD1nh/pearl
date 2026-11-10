@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, Linking, ScrollView, Text, View } from 'react-native';
 import { C, fmt, haptic, Icon, Row, Section } from '@/components/ui';
@@ -39,6 +40,7 @@ export default function TxDetail() {
       <Section header="Mã giao dịch">
         <Row title={id.slice(0, 10) + '…' + id.slice(-10)} onPress={() => Alert.alert('Mở giao dịch?', 'Xem giao dịch trong trình duyệt.', [
           { text: 'Hủy', style: 'cancel' },
+          { text: 'Sao chép', onPress: () => { Clipboard.setStringAsync(id).then(() => { haptic.success(); Alert.alert('Đã chép mã giao dịch'); }).catch(e => Alert.alert('Không sao chép được', String(e.message))); } },
           { text: 'Mở', onPress: () => { Linking.openURL(`https://explorer.pearlresearch.ai/tx/${encodeURIComponent(id)}?network=${setup?.network === 'testnet2' ? 'testnet' : 'mainnet'}`).catch(e => Alert.alert('Không mở được trình duyệt', String(e.message))); } },
         ])}>
           <Icon name="arrow.up.right.square" size={17} />
